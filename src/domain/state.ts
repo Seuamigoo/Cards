@@ -4,10 +4,16 @@ import type { Rng } from "./rng";
 
 export type CardRarity = "comum" | "incomum" | "rara" | "epica" | "lendaria" | "mitica";
 
+export interface CardImage {
+  readonly src: string;
+  readonly alt?: string;
+}
+
 interface CardBase {
   readonly id: string;
   readonly name: string;
   readonly rarity: CardRarity;
+  readonly image?: CardImage;
 }
 
 export interface MonsterCard extends CardBase {
@@ -90,12 +96,14 @@ export function opponentOf(index: PlayerIndex): PlayerIndex {
 }
 
 export function copyCard<T extends Card>(card: T): T {
+  const image = imagePart(card);
   switch (card.kind) {
     case "monster":
       return {
         id: card.id,
         name: card.name,
         rarity: card.rarity,
+        ...image,
         kind: "monster",
         atk: card.atk,
         def: card.def,
@@ -103,24 +111,37 @@ export function copyCard<T extends Card>(card: T): T {
         ...(card.class !== undefined ? { class: card.class } : {}),
       } as T;
     case "spell":
-      return { id: card.id, name: card.name, rarity: card.rarity, kind: "spell" } as T;
+      return { id: card.id, name: card.name, rarity: card.rarity, ...image, kind: "spell" } as T;
     case "trap":
-      return { id: card.id, name: card.name, rarity: card.rarity, kind: "trap" } as T;
+      return { id: card.id, name: card.name, rarity: card.rarity, ...image, kind: "trap" } as T;
     case "tower":
       return {
         id: card.id,
         name: card.name,
         rarity: card.rarity,
+        ...image,
         kind: "tower",
         ...(card.hp !== undefined ? { hp: card.hp } : {}),
       } as T;
     case "biome":
-      return { id: card.id, name: card.name, rarity: card.rarity, kind: "biome" } as T;
+      return { id: card.id, name: card.name, rarity: card.rarity, ...image, kind: "biome" } as T;
     default: {
       const unexpected: never = card;
       throw new Error(`Carta inválida: ${String(unexpected)}.`);
     }
   }
+}
+
+function imagePart(card: Card): { image: CardImage } | Record<string, never> {
+  if (card.image === undefined) {
+    return {};
+  }
+  return {
+    image: {
+      src: card.image.src,
+      ...(card.image.alt !== undefined ? { alt: card.image.alt } : {}),
+    },
+  };
 }
 
 export function createInitialState(

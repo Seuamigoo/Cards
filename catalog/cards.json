@@ -1,0 +1,75 @@
+{
+  "version": 1,
+  "publishedAt": "2026-11-16T00:00:00.000Z",
+  "cards": [
+    {
+      "id": "sentinela-brasa",
+      "name": "Sentinela de Brasa",
+      "rarity": "comum",
+      "kind": "monster",
+      "atk": 1600,
+      "def": 1400,
+      "race": "elemento",
+      "class": "guarda",
+      "image": {
+        "src": "assets/cards/placeholder.webp",
+        "alt": "Sentinela de Brasa"
+      }
+    },
+    {
+      "id": "arauto-vertice",
+      "name": "Arauto do Vértice",
+      "rarity": "rara",
+      "kind": "monster",
+      "atk": 2100,
+      "def": 800,
+      "race": "convergente",
+      "class": "arauto",
+      "image": {
+        "src": "assets/cards/placeholder.webp",
+        "alt": "Arauto do Vértice"
+      }
+    },
+    {
+      "id": "pacto-confluencia",
+      "name": "Pacto de Confluência",
+      "rarity": "incomum",
+      "kind": "spell",
+      "image": {
+        "src": "assets/cards/placeholder.webp",
+        "alt": "Pacto de Confluência"
+      }
+    },
+    {
+      "id": "limiar-quebrado",
+      "name": "Limiar Quebrado",
+      "rarity": "rara",
+      "kind": "trap",
+      "image": {
+        "src": "assets/cards/placeholder.webp",
+        "alt": "Limiar Quebrado"
+      }
+    },
+    {
+      "id": "torre-aurora",
+      "name": "Torre da Aurora",
+      "rarity": "epica",
+      "kind": "tower",
+      "hp": 4000,
+      "image": {
+        "src": "assets/cards/placeholder.webp",
+        "alt": "Torre da Aurora"
+      }
+    },
+    {
+      "id": "clareira-mares",
+      "name": "Clareira das Marés",
+      "rarity": "lendaria",
+      "kind": "biome",
+      "image": {
+        "src": "assets/cards/placeholder.webp",
+        "alt": "Clareira das Marés"
+      }
+    }
+  ]
+}
