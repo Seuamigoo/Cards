@@ -1,3 +1,4 @@
+import { readCardImage } from "../catalog/image";
 import { resolveConfig } from "../domain/config";
 import type { GameMode, WinCondition } from "../domain/config";
 import { cloneBoardState } from "../domain/state";
@@ -311,20 +312,37 @@ function parseCard(value: unknown): Card | null {
     return null;
   }
   const base = { id: value.id, name: value.name, rarity: value.rarity };
-  switch (value.kind) {
-    case "monster":
-      return parseMonster(base, value);
-    case "spell":
-      return { ...base, kind: "spell" };
-    case "trap":
-      return { ...base, kind: "trap" };
-    case "tower":
-      return parseTower(base, value);
-    case "biome":
-      return { ...base, kind: "biome" };
-    default:
-      return null;
+  const card = (() => {
+    switch (value.kind) {
+      case "monster":
+        return parseMonster(base, value);
+      case "spell":
+        return { ...base, kind: "spell" as const };
+      case "trap":
+        return { ...base, kind: "trap" as const };
+      case "tower":
+        return parseTower(base, value);
+      case "biome":
+        return { ...base, kind: "biome" as const };
+      default:
+        return null;
+    }
+  })();
+  if (card === null) {
+    return null;
   }
+  return applyImage(card, value);
+}
+
+function applyImage<T extends Card>(card: T, value: Record<string, unknown>): T | null {
+  if (!Object.hasOwn(value, "image")) {
+    return card;
+  }
+  const image = readCardImage(value.image);
+  if (image === null) {
+    return null;
+  }
+  return { ...card, image };
 }
 
 function parseMonster(

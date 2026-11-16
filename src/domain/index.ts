@@ -6,6 +6,7 @@ export type {
   BiomeCard,
   BoardState,
   Card,
+  CardImage,
   CardRarity,
   MonsterCard,
   Phase,

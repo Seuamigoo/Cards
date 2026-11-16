@@ -12,4 +12,23 @@ npm test
 npm run typecheck
 ```
 
-`npm test` executa os testes com Vitest. `npm run typecheck` roda `tsc --noEmit` em modo strict.
+`npm test` executa os testes com Vitest. `npm run typecheck` roda `tsc --noEmit` em modo strict, inclusive o app em `app/`. `npm run build:app` gera o frontend.
+
+## Instalar
+
+Os instaladores ficam na página de [Releases](https://github.com/Seuamigoo/Cards/releases):
+
+- Windows: `.exe` (NSIS) e `.msi`
+- Linux: AppImage e `.deb`
+- macOS: `.dmg`
+
+## Gerar uma versão
+
+Com o código já no `main`:
+
+```bash
+git tag v0.1.0 && git push --tags
+```
+
+O workflow `.github/workflows/release.yml` compila o app Tauri nessa tag e publica o GitHub Release com os instaladores. O mesmo workflow pode ser disparado manualmente, informando a tag.
+
