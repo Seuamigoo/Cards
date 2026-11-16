@@ -36,7 +36,12 @@ describe("createInitialState", () => {
         expect(player.spellTrapZone.every((slot) => slot === null)).toBe(true);
         expect(player.towerZone).toBeNull();
         expect(player.biomeZone).toBeNull();
+        expect(player.limbo).toEqual([]);
+        expect(player.normalSummonedThisTurn).toBe(false);
+        expect(player.towerSummonedThisTurn).toBe(false);
       }
+
+      expect(state.winner).toBeNull();
 
       const [first, second] = state.players;
       expect(first.monsterZone).not.toBe(second.monsterZone);
@@ -44,6 +49,7 @@ describe("createInitialState", () => {
       expect(first.hand).not.toBe(second.hand);
       expect(first.deck).not.toBe(second.deck);
       expect(first.graveyard).not.toBe(second.graveyard);
+      expect(first.limbo).not.toBe(second.limbo);
     },
   );
 });
