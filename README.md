@@ -2,7 +2,7 @@
 
 Núcleo de domínio do motor do TCG Convergência, em TypeScript puro e sem dependências de runtime.
 
-O escopo desta etapa é só `src/domain/` e `tests/domain/`: configuração da partida (`classic` e `blitz`), estado inicial do tabuleiro, ciclo de fases, barramento de eventos e avanço de fase em `GameMatch`. Não há interface, combate, invocação, tags, compra de cartas, Limbo nem efeitos.
+O pacote cobre o domínio do motor e a persistência em memória, sem interface e sem dependência de runtime. Há configuração (`classic` e `blitz`), estado da partida, compra, invocação de monstro, magia/armadilha, Torre, Bioma, Limbo, ciclo de fases e perfis de jogador. Combate e efeitos ficam de fora. `LocalStorageAdapter` só usa `localStorage` quando ele existe no ambiente.
 
 ## Como rodar
 

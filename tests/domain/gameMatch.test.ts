@@ -23,6 +23,7 @@ function cloneState(state: BoardState): BoardState {
     turn: state.turn,
     activePlayerIndex: state.activePlayerIndex,
     phase: state.phase,
+    winner: state.winner,
   };
 }
 
@@ -38,12 +39,15 @@ function clonePlayer(player: PlayerState): PlayerState {
       player.towerZone === null
         ? null
         : {
-            card: { ...player.towerZone.card },
+            card: player.towerZone.card,
             hp: player.towerZone.hp,
             maxHp: player.towerZone.maxHp,
           },
-    biomeZone: player.biomeZone === null ? null : { ...player.biomeZone },
+    biomeZone: player.biomeZone,
     graveyard: [...player.graveyard],
+    limbo: [...player.limbo],
+    towerSummonedThisTurn: player.towerSummonedThisTurn,
+    normalSummonedThisTurn: player.normalSummonedThisTurn,
   };
 }
 
