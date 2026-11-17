@@ -175,6 +175,7 @@ function parsePlayer(value: unknown, config: BoardState["config"]): PlayerState 
   const spellTrapZone = parseSpellTrapZone(value.spellTrapZone, config.spellTrapSlots);
   const towerZone = parseTowerInstance(value.towerZone);
   const biomeZone = parseBiomeSlot(value.biomeZone);
+  const attackedThisTurn = parseAttackFlags(value.attackedThisTurn, config.monsterSlots);
   if (
     hand === null ||
     deck === null ||
@@ -183,7 +184,8 @@ function parsePlayer(value: unknown, config: BoardState["config"]): PlayerState 
     monsterZone === null ||
     spellTrapZone === null ||
     towerZone === undefined ||
-    biomeZone === undefined
+    biomeZone === undefined ||
+    attackedThisTurn === null
   ) {
     return null;
   }
@@ -200,7 +202,21 @@ function parsePlayer(value: unknown, config: BoardState["config"]): PlayerState 
     limbo,
     towerSummonedThisTurn: value.towerSummonedThisTurn,
     normalSummonedThisTurn: value.normalSummonedThisTurn,
+    attackedThisTurn,
   };
+}
+
+function parseAttackFlags(value: unknown, slots: number): readonly boolean[] | null {
+  if (value === undefined) {
+    return Array.from({ length: slots }, () => false);
+  }
+  if (!Array.isArray(value) || value.length !== slots) {
+    return null;
+  }
+  if (value.some((item) => typeof item !== "boolean")) {
+    return null;
+  }
+  return value as readonly boolean[];
 }
 
 function parseCardList(value: unknown): readonly Card[] | null {

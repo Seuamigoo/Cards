@@ -1,3 +1,4 @@
+import type { AttackTarget } from "./combatRules";
 import type { Phase, PlayerIndex } from "./state";
 import type { BiomeCard, Card, MonsterCard, TowerCard } from "./state";
 
@@ -45,7 +46,25 @@ export interface BiomePlayedEvent {
   readonly replaced: BiomeCard | null;
 }
 
-export type GameOverReason = "deck_out";
+export type GameOverReason = "deck_out" | "player_hp";
+
+export interface AttackDeclaredEvent {
+  readonly playerIndex: PlayerIndex;
+  readonly attackerZoneIndex: number;
+  readonly target: AttackTarget;
+}
+
+export interface MonsterDestroyedEvent {
+  readonly playerIndex: PlayerIndex;
+  readonly zoneIndex: number;
+  readonly card: MonsterCard;
+}
+
+export interface DamageDealtEvent {
+  readonly playerIndex: PlayerIndex;
+  readonly amount: number;
+  readonly source: "battle";
+}
 
 export interface GameOverEvent {
   readonly winner: PlayerIndex;
@@ -61,6 +80,9 @@ export interface GameEventMap {
   "tower:destroyed": TowerDestroyedEvent;
   "biome:played": BiomePlayedEvent;
   "game:over": GameOverEvent;
+  "attack:declared": AttackDeclaredEvent;
+  "monster:destroyed": MonsterDestroyedEvent;
+  "damage:dealt": DamageDealtEvent;
 }
 
 type Handler<K extends keyof GameEventMap> = (payload: GameEventMap[K]) => void;
@@ -77,6 +99,9 @@ export class EventBus {
     "tower:destroyed": new Set(),
     "biome:played": new Set(),
     "game:over": new Set(),
+    "attack:declared": new Set(),
+    "monster:destroyed": new Set(),
+    "damage:dealt": new Set(),
   };
 
   on<K extends keyof GameEventMap>(event: K, handler: Handler<K>): () => void {
@@ -112,6 +137,12 @@ export class EventBus {
         return this.handlers["biome:played"] as Set<Handler<K>>;
       case "game:over":
         return this.handlers["game:over"] as Set<Handler<K>>;
+      case "attack:declared":
+        return this.handlers["attack:declared"] as Set<Handler<K>>;
+      case "monster:destroyed":
+        return this.handlers["monster:destroyed"] as Set<Handler<K>>;
+      case "damage:dealt":
+        return this.handlers["damage:dealt"] as Set<Handler<K>>;
       default: {
         const unexpected: never = event;
         throw new Error(`Evento desconhecido: ${String(unexpected)}.`);

@@ -6,6 +6,7 @@ import { EventBus } from "./eventBus";
 import { nextPhase } from "./phases";
 import { createSeededRng } from "./rng";
 import type { Rng } from "./rng";
+import type { AttackTarget } from "./combatRules";
 import { cloneBoardState, createInitialState, opponentOf } from "./state";
 import type { BoardState, Card, PlayerIndex } from "./state";
 
@@ -142,6 +143,9 @@ export class GameMatch {
       case "playBiome":
         this.publishBiome(before, after);
         return;
+      case "attack":
+        this.publishAttack(before, after, action.attackerZoneIndex, action.target);
+        return;
       default: {
         const unexpected: never = action;
         throw new Error(`Ação inválida: ${String(unexpected)}.`);
@@ -170,7 +174,55 @@ export class GameMatch {
         turn: after.turn,
       });
     }
-    this.publishGameOver(before, after);
+    this.publishGameOver(before, after, "deck_out");
+  }
+
+  private publishAttack(
+    before: BoardState,
+    after: BoardState,
+    attackerZoneIndex: number,
+    target: AttackTarget,
+  ): void {
+    const playerIndex = before.activePlayerIndex;
+    this.events.emit("attack:declared", { playerIndex, attackerZoneIndex, target });
+    const opponent = opponentOf(playerIndex);
+    if (target.kind === "monster") {
+      this.publishDestroyedMonster(before, after, opponent, target.zoneIndex);
+      this.publishDestroyedMonster(before, after, playerIndex, attackerZoneIndex);
+    }
+    if (target.kind === "tower") {
+      const previous = before.players[opponent].towerZone;
+      const next = after.players[opponent].towerZone;
+      if (previous !== null && next === null) {
+        this.events.emit("tower:destroyed", {
+          playerIndex: opponent,
+          card: previous.card,
+          hp: previous.hp,
+          maxHp: previous.maxHp,
+        });
+      }
+    }
+    for (const index of [0, 1] as const) {
+      const amount = before.players[index].hp - after.players[index].hp;
+      if (amount > 0) {
+        this.events.emit("damage:dealt", { playerIndex: index, amount, source: "battle" });
+      }
+    }
+    this.publishGameOver(before, after, "player_hp");
+  }
+
+  private publishDestroyedMonster(
+    before: BoardState,
+    after: BoardState,
+    playerIndex: PlayerIndex,
+    zoneIndex: number,
+  ): void {
+    const card = before.players[playerIndex].monsterZone[zoneIndex];
+    const next = after.players[playerIndex].monsterZone[zoneIndex];
+    if (card === null || card === undefined || next !== null) {
+      return;
+    }
+    this.events.emit("monster:destroyed", { playerIndex, zoneIndex, card });
   }
 
   private publishMonster(before: BoardState, handIndex: number, zoneIndex: number): void {
@@ -209,11 +261,15 @@ export class GameMatch {
     });
   }
 
-  private publishGameOver(before: BoardState, after: BoardState): void {
+  private publishGameOver(
+    before: BoardState,
+    after: BoardState,
+    reason: "deck_out" | "player_hp",
+  ): void {
     if (before.winner !== null || after.winner === null) {
       return;
     }
-    this.events.emit("game:over", { winner: after.winner, reason: "deck_out" });
+    this.events.emit("game:over", { winner: after.winner, reason });
   }
 }
 

@@ -1,3 +1,5 @@
+import { canDeclareAttack, getLegalTargets } from "./combatRules";
+import type { AttackTarget } from "./combatRules";
 import { nextPhase } from "./phases";
 import { copyCard, opponentOf } from "./state";
 import type {
@@ -18,7 +20,12 @@ export type Action =
   | { readonly type: "summonMonster"; readonly handIndex: number; readonly zoneIndex: number }
   | { readonly type: "setSpellTrap"; readonly handIndex: number; readonly zoneIndex: number }
   | { readonly type: "summonTower"; readonly handIndex: number }
-  | { readonly type: "playBiome"; readonly handIndex: number };
+  | { readonly type: "playBiome"; readonly handIndex: number }
+  | {
+      readonly type: "attack";
+      readonly attackerZoneIndex: number;
+      readonly target: AttackTarget;
+    };
 
 export type ActionResult =
   | { readonly ok: true; readonly state: BoardState }
@@ -37,6 +44,7 @@ interface DraftPlayer {
   limbo: TowerCard[];
   towerSummonedThisTurn: boolean;
   normalSummonedThisTurn: boolean;
+  attackedThisTurn: boolean[];
 }
 
 export function getLegalActions(state: BoardState, playerIndex: PlayerIndex): readonly Action[] {
@@ -45,6 +53,17 @@ export function getLegalActions(state: BoardState, playerIndex: PlayerIndex): re
   }
 
   const actions: Action[] = [{ type: "advancePhase" }];
+  if (state.phase === "battle") {
+    state.players[playerIndex].monsterZone.forEach((slot, zoneIndex) => {
+      if (slot === null) {
+        return;
+      }
+      for (const target of getLegalTargets(state, playerIndex, zoneIndex)) {
+        actions.push({ type: "attack", attackerZoneIndex: zoneIndex, target });
+      }
+    });
+    return actions;
+  }
   if (!isMainPhase(state.phase)) {
     return actions;
   }
@@ -112,6 +131,8 @@ export function applyAction(
       return applySummonTower(state, playerIndex, action.handIndex);
     case "playBiome":
       return applyPlayBiome(state, playerIndex, action.handIndex);
+    case "attack":
+      return applyAttack(state, playerIndex, action.attackerZoneIndex, action.target);
     default: {
       const unexpected: never = action;
       throw new Error(`Ação inválida: ${String(unexpected)}.`);
@@ -147,6 +168,7 @@ function applyAdvance(state: BoardState): ActionResult {
   discardToHandLimit(ending, state.config.handLimit);
   ending.normalSummonedThisTurn = false;
   ending.towerSummonedThisTurn = false;
+  ending.attackedThisTurn = ending.monsterZone.map(() => false);
   let players = replacePlayer(state.players, endingIndex, commitPlayer(ending));
 
   const nextIndex = opponentOf(endingIndex);
@@ -300,6 +322,125 @@ function applyPlayBiome(
   return success(commitBoard(state, replacePlayer(state.players, playerIndex, commitPlayer(draft))));
 }
 
+function applyAttack(
+  state: BoardState,
+  playerIndex: PlayerIndex,
+  attackerZoneIndex: number,
+  target: AttackTarget,
+): ActionResult {
+  if (state.phase !== "battle") {
+    return failure("Ataques só são permitidos na fase battle.");
+  }
+  if (!canDeclareAttack(state, playerIndex, attackerZoneIndex)) {
+    return failure("Este monstro não pode atacar.");
+  }
+  const allowed = getLegalTargets(state, playerIndex, attackerZoneIndex);
+  if (!allowed.some((candidate) => sameTarget(candidate, target))) {
+    return failure("Alvo de ataque inválido.");
+  }
+  const attackerCard = state.players[playerIndex].monsterZone[attackerZoneIndex];
+  if (attackerCard === null || attackerCard === undefined) {
+    return failure("Este monstro não pode atacar.");
+  }
+
+  const opponentIndex = opponentOf(playerIndex);
+  const attacker = draftOf(state.players[playerIndex]);
+  const defender = draftOf(state.players[opponentIndex]);
+  attacker.attackedThisTurn[attackerZoneIndex] = true;
+
+  switch (target.kind) {
+    case "monster":
+      resolveMonsterBattle(attacker, defender, attackerZoneIndex, target.zoneIndex);
+      break;
+    case "tower":
+      resolveTowerAttack(attackerCard.atk, defender);
+      break;
+    case "player":
+      defender.hp -= attackerCard.atk;
+      break;
+    default: {
+      const unexpected: never = target;
+      throw new Error(`Alvo inválido: ${String(unexpected)}.`);
+    }
+  }
+
+  let winner = state.winner;
+  if (attacker.hp <= 0 || defender.hp <= 0) {
+    winner = attacker.hp <= 0 && defender.hp > 0 ? opponentIndex : playerIndex;
+  }
+  return success(
+    commitBoard(state, replacePlayer(replacePlayer(state.players, playerIndex, commitPlayer(attacker)), opponentIndex, commitPlayer(defender)), {
+      winner,
+    }),
+  );
+}
+
+function resolveMonsterBattle(
+  attacker: DraftPlayer,
+  defender: DraftPlayer,
+  attackerZoneIndex: number,
+  defenderZoneIndex: number,
+): void {
+  const attackerCard = attacker.monsterZone[attackerZoneIndex];
+  const defenderCard = defender.monsterZone[defenderZoneIndex];
+  if (attackerCard === null || attackerCard === undefined || defenderCard === null || defenderCard === undefined) {
+    return;
+  }
+  if (attackerCard.atk === defenderCard.atk) {
+    destroyMonster(attacker, attackerZoneIndex);
+    destroyMonster(defender, defenderZoneIndex);
+    return;
+  }
+  if (attackerCard.atk > defenderCard.atk) {
+    defender.hp -= attackerCard.atk - defenderCard.atk;
+    destroyMonster(defender, defenderZoneIndex);
+    return;
+  }
+  attacker.hp -= defenderCard.atk - attackerCard.atk;
+  destroyMonster(attacker, attackerZoneIndex);
+}
+
+function resolveTowerAttack(atk: number, defender: DraftPlayer): void {
+  if (defender.towerZone === null) {
+    return;
+  }
+  const nextHp = defender.towerZone.hp - atk;
+  if (nextHp <= 0) {
+    defender.limbo = [...defender.limbo, copyCard(defender.towerZone.card)];
+    defender.towerZone = null;
+    // PROVISÓRIO: destruir a Torre libera outra invocação de Torre neste turno.
+    defender.towerSummonedThisTurn = false;
+    return;
+  }
+  defender.towerZone = { ...defender.towerZone, hp: nextHp };
+}
+
+function destroyMonster(player: DraftPlayer, zoneIndex: number): void {
+  const card = player.monsterZone[zoneIndex];
+  if (card === null || card === undefined) {
+    return;
+  }
+  const zone = [...player.monsterZone];
+  zone[zoneIndex] = null;
+  player.monsterZone = zone;
+  player.graveyard = [...player.graveyard, card];
+}
+
+function sameTarget(left: AttackTarget, right: AttackTarget): boolean {
+  switch (left.kind) {
+    case "monster":
+      return right.kind === "monster" && right.zoneIndex === left.zoneIndex;
+    case "tower":
+      return right.kind === "tower";
+    case "player":
+      return right.kind === "player";
+    default: {
+      const unexpected: never = left;
+      throw new Error(`Alvo inválido: ${String(unexpected)}.`);
+    }
+  }
+}
+
 function skipsDrawStep(turn: number, playerIndex: PlayerIndex): boolean {
   return turn === 1 && playerIndex === 0;
 }
@@ -386,6 +527,7 @@ function draftOf(player: PlayerState): DraftPlayer {
     limbo: [...player.limbo],
     towerSummonedThisTurn: player.towerSummonedThisTurn,
     normalSummonedThisTurn: player.normalSummonedThisTurn,
+    attackedThisTurn: [...player.attackedThisTurn],
   };
 }
 
@@ -403,6 +545,7 @@ function commitPlayer(draft: DraftPlayer): PlayerState {
     limbo: draft.limbo,
     towerSummonedThisTurn: draft.towerSummonedThisTurn,
     normalSummonedThisTurn: draft.normalSummonedThisTurn,
+    attackedThisTurn: draft.attackedThisTurn,
   };
 }
 

@@ -24,6 +24,8 @@ export { nextPhase } from "./phases";
 export { createSeededRng, shuffle } from "./rng";
 export type { Rng } from "./rng";
 
+export { getLegalTargets } from "./combatRules";
+export type { AttackTarget } from "./combatRules";
 export { applyAction, destroyTower, getLegalActions } from "./actions";
 export type { Action, ActionResult } from "./actions";
 
@@ -32,8 +34,11 @@ export type {
   BiomePlayedEvent,
   CardDrawnEvent,
   GameEventMap,
+  AttackDeclaredEvent,
+  DamageDealtEvent,
   GameOverEvent,
   GameOverReason,
+  MonsterDestroyedEvent,
   MonsterSummonedEvent,
   PhaseChangedEvent,
   TowerDestroyedEvent,

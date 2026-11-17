@@ -48,6 +48,7 @@ function clonePlayer(player: PlayerState): PlayerState {
     limbo: [...player.limbo],
     towerSummonedThisTurn: player.towerSummonedThisTurn,
     normalSummonedThisTurn: player.normalSummonedThisTurn,
+    attackedThisTurn: [...player.attackedThisTurn],
   };
 }
 

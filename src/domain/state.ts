@@ -67,6 +67,8 @@ export interface PlayerState {
   readonly limbo: readonly TowerCard[];
   readonly towerSummonedThisTurn: boolean;
   readonly normalSummonedThisTurn: boolean;
+  /** PROVISÓRIO: um booleano por slot; todo monstro entra em posição de ataque. */
+  readonly attackedThisTurn: readonly boolean[];
 }
 
 export type Phase = "draw" | "main1" | "battle" | "main2" | "end";
@@ -224,6 +226,7 @@ function emptyPlayer(
     limbo: [],
     towerSummonedThisTurn: false,
     normalSummonedThisTurn: false,
+    attackedThisTurn: emptySlots<boolean>(config.monsterSlots).map(() => false),
   };
 }
 
@@ -274,5 +277,6 @@ function sealPlayer(player: PlayerState): PlayerState {
     towerZone: player.towerZone === null ? null : Object.freeze({ ...player.towerZone }),
     graveyard: Object.freeze([...player.graveyard]),
     limbo: Object.freeze([...player.limbo]),
+    attackedThisTurn: Object.freeze([...player.attackedThisTurn]),
   });
 }
