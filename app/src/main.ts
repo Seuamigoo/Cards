@@ -1,4 +1,9 @@
 import catalogFile from "../../catalog/cards.json";
+import { chooseAction } from "../../src/ai/bot";
+import type { BotLevel } from "../../src/ai/bot";
+import { buildDeck } from "../../src/catalog/index";
+import { GameMatch, MODE_CONFIGS, createSeededRng, getLegalActions } from "../../src/domain/index";
+import type { Action, BoardState } from "../../src/domain/index";
 import { adminCards, apiUrl, loginAccount, publishCatalog, registerAccount, saveCard, uploadCardImage } from "./api";
 import type { Session } from "./api";
 import { CardRegistry, CatalogCache } from "../../src/catalog/index";
@@ -7,7 +12,7 @@ import type { Card } from "../../src/domain/index";
 import { MemoryStorageAdapter } from "../../src/persistence/index";
 import "./style.css";
 
-type Screen = "menu" | "collection" | "login" | "register" | "admin" | "online";
+type Screen = "menu" | "collection" | "login" | "register" | "admin" | "online" | "bot";
 
 let loaded: CardRegistryResult = CardRegistry.fromJSON(JSON.stringify(catalogFile));
 let session: Session | null = null;
@@ -42,6 +47,9 @@ function draw(): void {
     case "online":
       app.append(renderOnline());
       return;
+    case "bot":
+      app.append(renderBot());
+      return;
     default: {
       const unexpected: never = screen;
       throw new Error(`Tela inválida: ${String(unexpected)}.`);
@@ -57,7 +65,10 @@ function renderMenu(): HTMLElement {
   intro.textContent = "Escolha um modo.";
   const nav = document.createElement("nav");
   nav.append(
-    disabledButton("Jogar contra bot"),
+    actionButton("Jogar contra bot", () => {
+      screen = "bot";
+      draw();
+    }),
     session === null
       ? disabledButton("Online")
       : actionButton("Online", () => {
@@ -336,6 +347,120 @@ async function publishAdmin(status: HTMLElement): Promise<void> {
     return;
   }
   status.textContent = await publishCatalog(session.accessToken);
+}
+
+let botMatch: GameMatch | null = null;
+let botLevel: BotLevel = "easy";
+const botRng = createSeededRng(9);
+
+function renderBot(): HTMLElement {
+  const main = document.createElement("main");
+  const title = document.createElement("h1");
+  title.textContent = "Jogar contra bot";
+  const toolbar = document.createElement("div");
+  toolbar.className = "toolbar";
+  toolbar.append(
+    actionButton("Fácil", () => {
+      startBot("easy");
+    }),
+    actionButton("Normal", () => {
+      startBot("normal");
+    }),
+    actionButton("Voltar", () => {
+      screen = "menu";
+      draw();
+    }),
+  );
+  main.append(title, toolbar);
+  if (botMatch === null) {
+    return main;
+  }
+  const state = botMatch.getState();
+  const status = document.createElement("p");
+  const winner = state.winner === null ? `vez do jogador ${state.activePlayerIndex}` : `vencedor ${state.winner}`;
+  status.textContent = `Turno ${state.turn} · ${state.phase} · HP ${state.players[0].hp} x ${state.players[1].hp} · ${winner}`;
+  const hand = document.createElement("p");
+  hand.textContent = `Sua mão: ${state.players[0].hand.map((card) => card.name).join(", ") || "vazia"}`;
+  main.append(status, hand);
+  if (state.winner === null && state.activePlayerIndex === 0) {
+    const actions = document.createElement("div");
+    actions.className = "toolbar";
+    for (const action of getLegalActions(state, 0)) {
+      actions.append(
+        actionButton(labelAction(state, action), () => {
+          botMatch?.dispatch(action);
+          runBot();
+          draw();
+        }),
+      );
+    }
+    main.append(actions);
+  }
+  return main;
+}
+
+function startBot(level: BotLevel): void {
+  if (!loaded.ok) {
+    return;
+  }
+  const ids: string[] = [];
+  const source = loaded.registry.all().map((card) => card.id);
+  while (ids.length < MODE_CONFIGS.classic.mainDeckMin) {
+    for (const id of source) {
+      ids.push(id);
+      if (ids.length === MODE_CONFIGS.classic.mainDeckMin) {
+        break;
+      }
+    }
+  }
+  const built = buildDeck(loaded.registry, ids);
+  if (!built.ok) {
+    return;
+  }
+  botLevel = level;
+  botMatch = new GameMatch("classic", ["voce", "bot"], undefined, {
+    decks: [built.cards, built.cards],
+    seed: 1,
+  });
+  runBot();
+  draw();
+}
+
+function runBot(): void {
+  if (botMatch === null) {
+    return;
+  }
+  for (let step = 0; step < 40 && botMatch.getState().winner === null && botMatch.getState().activePlayerIndex === 1; step += 1) {
+    const action = chooseAction(botMatch.getState(), 1, botRng, botLevel);
+    if (action === null) {
+      return;
+    }
+    const result = botMatch.dispatch(action);
+    if (!result.ok) {
+      return;
+    }
+  }
+}
+
+function labelAction(state: BoardState, action: Action): string {
+  switch (action.type) {
+    case "advancePhase":
+      return "Avançar fase";
+    case "summonMonster":
+      return `Invocar ${state.players[0].hand[action.handIndex]?.name ?? "monstro"}`;
+    case "setSpellTrap":
+      return `Posicionar ${state.players[0].hand[action.handIndex]?.name ?? "carta"}`;
+    case "summonTower":
+      return "Invocar Torre";
+    case "playBiome":
+      return "Jogar Bioma";
+    case "attack":
+      return `Atacar ${action.target.kind}`;
+    default: {
+      const unexpected: never = action;
+      return String(unexpected);
+    }
+  }
 }
 
 function renderOnline(): HTMLElement {
