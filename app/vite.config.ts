@@ -16,6 +16,14 @@ export default defineConfig({
     fs: {
       allow: [resolve(appDir, "..")],
     },
+    proxy: {
+      "/auth": "http://127.0.0.1:3001",
+      "/admin": "http://127.0.0.1:3001",
+      "/catalog": "http://127.0.0.1:3001",
+      "/me": "http://127.0.0.1:3001",
+      "/uploads": "http://127.0.0.1:3001",
+      "/health": "http://127.0.0.1:3001",
+    },
   },
 });
 

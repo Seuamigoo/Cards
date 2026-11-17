@@ -4,10 +4,10 @@
   "private": true,
   "description": "Núcleo de domínio do motor do TCG Convergência",
   "type": "module",
-  "workspaces": ["app"],
+  "workspaces": ["app", "server"],
   "scripts": {
     "test": "vitest run",
-    "typecheck": "tsc --noEmit && tsc --noEmit -p app/tsconfig.json",
+    "typecheck": "tsc --noEmit && tsc --noEmit -p app/tsconfig.json && tsc --noEmit -p server/tsconfig.json",
     "build:app": "npm run build -w convergencia-app"
   },
   "devDependencies": {

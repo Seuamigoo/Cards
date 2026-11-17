@@ -2,7 +2,21 @@
 
 Núcleo de domínio do motor do TCG Convergência, em TypeScript puro e sem dependências de runtime.
 
-O pacote cobre o domínio do motor e a persistência em memória, sem interface e sem dependência de runtime. Há configuração (`classic` e `blitz`), estado da partida, compra, invocação de monstro, magia/armadilha, Torre, Bioma, Limbo, ciclo de fases e perfis de jogador. Combate e efeitos ficam de fora. `LocalStorageAdapter` só usa `localStorage` quando ele existe no ambiente.
+O pacote cobre o motor (incluindo combate), o catálogo, a persistência local e o app. O servidor em `server/` tem as próprias dependências. Efeitos de carta ficam de fora.
+
+## Servidor
+
+```bash
+cp server/.env.example server/.env
+npm install
+npm run prisma:push -w convergencia-server
+npm run seed -w convergencia-server
+npm run dev -w convergencia-server
+```
+
+Em outro terminal, `npm run dev -w convergencia-app`. A URL da API é `VITE_API_URL` (vazia no dev, com proxy do Vite para `127.0.0.1:3001`). Variáveis: `DATABASE_URL`, `JWT_ACCESS_SECRET`, `JWT_REFRESH_SECRET`, `ADMIN_EMAIL`, `ADMIN_PASSWORD`, `PORT`, `CORS_ORIGIN`.
+
+Testes do servidor: `npm test -w convergencia-server`.
 
 ## Como rodar
 
