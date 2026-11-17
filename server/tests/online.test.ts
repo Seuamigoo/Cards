@@ -28,7 +28,7 @@ describe("online", () => {
       method: "POST",
       url: "/admin/cards",
       headers: { authorization: `Bearer ${admin}` },
-      payload: { name: "Colosso", rarity: "rara", kind: "monster", atk: 8000, def: 1000, status: "published" },
+      payload: { name: "Colosso", rarity: "rara", kind: "monster", level: 4, atk: 8000, def: 1000, tags: ["HUMAN", "WARRIOR"], status: "published" },
     });
     const cardId = (createdCard.json() as { id: string }).id;
     const published = await app.inject({
@@ -99,7 +99,7 @@ describe("online", () => {
       method: "POST",
       url: "/admin/cards",
       headers: { authorization: `Bearer ${admin}` },
-      payload: { name: "Colosso Final", rarity: "mitica", kind: "monster", atk: 8000, def: 0, status: "published" },
+      payload: { name: "Colosso Final", rarity: "mitica", kind: "monster", level: 4, atk: 8000, def: 0, tags: ["HUMAN", "WARRIOR"], status: "published" },
     });
     const cardId = (createdCard.json() as { id: string }).id;
     await app.inject({
@@ -137,8 +137,8 @@ describe("online", () => {
     await first.find((message) => message.type === "state");
 
     await act(first, { type: "advancePhase" });
-    await act(first, { type: "summonMonster", handIndex: 0, zoneIndex: 0 });
-    for (let step = 0; step < 4; step += 1) {
+    await act(first, { type: "summonMonster", handIndex: 0, zoneIndex: 0, position: "attack", tributeZoneIndexes: [] });
+    for (let step = 0; step < 3; step += 1) {
       await act(first, { type: "advancePhase" });
     }
     for (let step = 0; step < 5; step += 1) {
@@ -165,7 +165,15 @@ describe("online", () => {
 
 async function act(
   client: ReturnType<typeof track>,
-  action: { type: string; handIndex?: number; zoneIndex?: number; attackerZoneIndex?: number; target?: { kind: string } },
+  action: {
+    type: string;
+    handIndex?: number;
+    zoneIndex?: number;
+    position?: string;
+    tributeZoneIndexes?: readonly number[];
+    attackerZoneIndex?: number;
+    target?: { kind: string };
+  },
 ): Promise<LiveMessage> {
   const cursor = client.size();
   client.socket.send(JSON.stringify({ type: "action", action }));

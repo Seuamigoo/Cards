@@ -1,5 +1,5 @@
 import { copyCard } from "../domain/state";
-import type { Card, CardRarity } from "../domain/state";
+import type { Card, CardRarity, Keyword } from "../domain/state";
 import { readCardImage } from "./image";
 
 export interface CardCatalog {
@@ -151,11 +151,11 @@ function parseDefinition(
   if (Object.hasOwn(value, "image") && readCardImage(value.image) === null) {
     errors.push(issue(index, cardId, "invalid_image", "Imagem inválida."));
   }
-  if (value.kind === "monster" && !hasNonNegativeIntegers(value, ["atk", "def"])) {
-    errors.push(issue(index, cardId, "invalid_stats", "ATK e DEF precisam ser inteiros maiores ou iguais a zero."));
+  if (value.kind === "monster" && (!hasNonNegativeIntegers(value, ["level", "atk", "def"]) || !isLevel(value.level))) {
+    errors.push(issue(index, cardId, "invalid_stats", "Nível, ATK e DEF do monstro são inválidos."));
   }
-  if (value.kind === "tower" && value.hp !== undefined && !isNonNegativeInteger(value.hp)) {
-    errors.push(issue(index, cardId, "invalid_stats", "HP da Torre precisa ser um inteiro maior ou igual a zero."));
+  if (value.kind === "tower" && !isNonNegativeInteger(value.def)) {
+    errors.push(issue(index, cardId, "invalid_stats", "DEF da Torre precisa ser um inteiro maior ou igual a zero."));
   }
   if (cardId !== null && seen.has(cardId)) {
     errors.push(issue(index, cardId, "duplicate_id", `Id duplicado: ${cardId}.`));
@@ -189,35 +189,35 @@ function buildCard(
   };
   switch (kind) {
     case "monster":
-      if (!isNonNegativeInteger(value.atk) || !isNonNegativeInteger(value.def)) {
+      if (!isLevel(value.level) || !isNonNegativeInteger(value.atk) || !isNonNegativeInteger(value.def)) {
         return null;
       }
-      if (value.race !== undefined && typeof value.race !== "string") {
-        return null;
-      }
-      if (value.class !== undefined && typeof value.class !== "string") {
+      const tags = readTags(value.tags);
+      const keywords = readKeywords(value.keywords);
+      if (tags === null || keywords === null) {
         return null;
       }
       return {
         ...base,
         kind,
-        atk: value.atk,
+        level: value.level,
         def: value.def,
-        ...(typeof value.race === "string" ? { race: value.race } : {}),
-        ...(typeof value.class === "string" ? { class: value.class } : {}),
+        atk: value.atk,
+        tags,
+        keywords,
       };
     case "spell":
     case "trap":
     case "biome":
       return { ...base, kind };
     case "tower":
-      if (value.hp !== undefined && !isNonNegativeInteger(value.hp)) {
+      if (!isNonNegativeInteger(value.def)) {
         return null;
       }
       return {
         ...base,
         kind,
-        ...(isNonNegativeInteger(value.hp) ? { hp: value.hp } : {}),
+        def: value.def,
       };
     default: {
       const unexpected: never = kind;
@@ -228,6 +228,43 @@ function buildCard(
 
 function hasNonNegativeIntegers(value: Record<string, unknown>, keys: readonly string[]): boolean {
   return keys.every((key) => isNonNegativeInteger(value[key]));
+}
+
+function isLevel(value: unknown): value is number {
+  return typeof value === "number" && Number.isInteger(value) && value >= 1 && value <= 8;
+}
+
+function readTags(value: unknown): string[] | null {
+  if (!Array.isArray(value) || value.some((tag) => typeof tag !== "string")) {
+    return null;
+  }
+  return value;
+}
+
+function readKeywords(value: unknown): Keyword[] | null {
+  if (!Array.isArray(value)) {
+    return null;
+  }
+  const keywords: Keyword[] = [];
+  for (const item of value) {
+    if (!isKeyword(item)) {
+      return null;
+    }
+    keywords.push(item);
+  }
+  return keywords;
+}
+
+function isKeyword(value: unknown): value is Keyword {
+  switch (value) {
+    case "impeto":
+    case "provocar":
+    case "perfurar":
+    case "ataqueTorre":
+      return true;
+    default:
+      return false;
+  }
 }
 
 function isNonNegativeInteger(value: unknown): value is number {

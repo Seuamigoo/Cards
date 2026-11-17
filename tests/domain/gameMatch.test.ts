@@ -40,15 +40,13 @@ function clonePlayer(player: PlayerState): PlayerState {
         ? null
         : {
             card: player.towerZone.card,
-            hp: player.towerZone.hp,
-            maxHp: player.towerZone.maxHp,
+            defBonus: player.towerZone.defBonus,
           },
     biomeZone: player.biomeZone,
     graveyard: [...player.graveyard],
     limbo: [...player.limbo],
     towerSummonedThisTurn: player.towerSummonedThisTurn,
     normalSummonedThisTurn: player.normalSummonedThisTurn,
-    attackedThisTurn: [...player.attackedThisTurn],
   };
 }
 

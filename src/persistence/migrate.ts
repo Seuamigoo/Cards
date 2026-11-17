@@ -39,6 +39,8 @@ function step(version: number, raw: unknown): PersistResult<unknown> {
   switch (version) {
     case 0:
       return migrateV0ToV1(raw);
+    case 1:
+      return migrateV1ToV2(raw);
     default:
       return persistFail("migration", `Sem migração a partir da versão ${version}.`);
   }
@@ -49,10 +51,10 @@ function migrateV0ToV1(raw: unknown): PersistResult<unknown> {
     return persistFail("migration", "Save v0 inválido.");
   }
   if ("state" in raw) {
-    return persistOk({ version: SAVE_VERSION, state: normalizeBoard(raw.state) });
+    return persistOk({ version: 1, state: normalizeBoard(raw.state) });
   }
   if ("playerId" in raw) {
-    return persistOk(normalizeProfile(raw));
+    return persistOk({ ...normalizeProfile(raw), version: 1 });
   }
   return persistFail("migration", "Save v0 sem partida ou perfil.");
 }
@@ -80,6 +82,80 @@ function normalizePlayer(value: unknown): unknown {
     normalSummonedThisTurn: "normalSummonedThisTurn" in value ? value.normalSummonedThisTurn : false,
     attackedThisTurn: "attackedThisTurn" in value ? value.attackedThisTurn : [],
   };
+}
+
+function migrateV1ToV2(raw: unknown): PersistResult<unknown> {
+  if (!isRecord(raw)) {
+    return persistFail("migration", "Save v1 inválido.");
+  }
+  if ("state" in raw) {
+    return persistOk({ version: SAVE_VERSION, state: upgradeBoard(raw.state) });
+  }
+  if ("playerId" in raw) {
+    return persistOk({ ...raw, version: SAVE_VERSION });
+  }
+  return persistFail("migration", "Save v1 sem partida ou perfil.");
+}
+
+function upgradeBoard(value: unknown): unknown {
+  if (!isRecord(value)) {
+    return value;
+  }
+  const config = isRecord(value.config) ? { ...value.config } : value.config;
+  if (isRecord(config)) {
+    delete config.defaultTowerHp;
+  }
+  const players = Array.isArray(value.players) ? value.players.map(upgradePlayer) : value.players;
+  return { ...value, config, players };
+}
+
+function upgradePlayer(value: unknown): unknown {
+  if (!isRecord(value)) {
+    return value;
+  }
+  const next = { ...value };
+  delete next.attackedThisTurn;
+  if (Array.isArray(next.monsterZone)) {
+    next.monsterZone = next.monsterZone.map(upgradeMonsterSlot);
+  }
+  next.towerZone = upgradeTower(next.towerZone);
+  return next;
+}
+
+function upgradeMonsterSlot(value: unknown): unknown {
+  if (value === null || !isRecord(value)) {
+    return value;
+  }
+  if ("card" in value && "position" in value) {
+    return value;
+  }
+  if (value.kind === "monster") {
+    return {
+      card: {
+        ...value,
+        level: typeof value.level === "number" ? value.level : 1,
+        tags: Array.isArray(value.tags) ? value.tags : [],
+        keywords: Array.isArray(value.keywords) ? value.keywords : [],
+      },
+      position: "attack",
+      summonedThisTurn: false,
+      changedPositionThisTurn: false,
+      attackedThisTurn: false,
+    };
+  }
+  return value;
+}
+
+function upgradeTower(value: unknown): unknown {
+  if (value === null || !isRecord(value) || !isRecord(value.card)) {
+    return value;
+  }
+  const card = { ...value.card };
+  if (typeof card.def !== "number") {
+    card.def = typeof card.hp === "number" ? card.hp : 0;
+  }
+  delete card.hp;
+  return { card, defBonus: typeof value.defBonus === "number" ? value.defBonus : 0 };
 }
 
 function normalizeProfile(raw: Record<string, unknown>): Record<string, unknown> {

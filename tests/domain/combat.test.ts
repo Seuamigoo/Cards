@@ -6,14 +6,27 @@ import {
   getLegalTargets,
   resolveConfig,
 } from "../../src/domain/index";
-import type { AttackTarget, BoardState, MonsterCard, PlayerIndex } from "../../src/domain/index";
+import type { AttackTarget, BoardState, MonsterCard, MonsterInstance, PlayerIndex } from "../../src/domain/index";
 
 function monster(id: string, atk: number, def = 0): MonsterCard {
-  return { id, name: id, rarity: "comum", kind: "monster", atk, def };
+  return { id, name: id, rarity: "comum", kind: "monster", level: 4, atk, def, tags: ["HUMAN", "WARRIOR"], keywords: [] };
 }
 
-function towerCard(id: string) {
-  return { id, name: id, rarity: "epica" as const, kind: "tower" as const, hp: 1000 };
+function placed(card: MonsterCard | null, attacked = false): MonsterInstance | null {
+  if (card === null) {
+    return null;
+  }
+  return {
+    card,
+    position: "attack",
+    summonedThisTurn: false,
+    changedPositionThisTurn: false,
+    attackedThisTurn: attacked,
+  };
+}
+
+function towerCard(id: string, def: number) {
+  return { id, name: id, rarity: "epica" as const, kind: "tower" as const, def };
 }
 
 function battleState(options: {
@@ -22,15 +35,14 @@ function battleState(options: {
   phase?: BoardState["phase"];
   attacker?: MonsterCard | null;
   defender?: MonsterCard | null;
-  towerHp?: number | null;
+  towerDef?: number | null;
   attackerHp?: number;
   defenderHp?: number;
   attacked?: boolean;
 }): BoardState {
   const config = resolveConfig("classic", { playerHp: 8000, monsterSlots: 2 });
-  const flags = [options.attacked === true, false];
-  const attackerZone = [options.attacker ?? null, null];
-  const defenderZone = [options.defender ?? null, null];
+  const attackerZone = [placed(options.attacker ?? null, options.attacked === true), null];
+  const defenderZone = [placed(options.defender ?? null), null];
   const base = {
     hand: [],
     deck: [],
@@ -54,7 +66,6 @@ function battleState(options: {
         hp: options.attackerHp ?? 8000,
         monsterZone: options.active === 1 ? defenderZone : attackerZone,
         towerZone: null,
-        attackedThisTurn: options.active === 1 ? [false, false] : flags,
       },
       {
         ...base,
@@ -62,10 +73,9 @@ function battleState(options: {
         hp: options.defenderHp ?? 8000,
         monsterZone: options.active === 1 ? attackerZone : defenderZone,
         towerZone:
-          options.towerHp === undefined || options.towerHp === null
+          options.towerDef === undefined || options.towerDef === null
             ? null
-            : { card: towerCard("torre"), hp: options.towerHp, maxHp: options.towerHp },
-        attackedThisTurn: options.active === 1 ? flags : [false, false],
+            : { card: towerCard("torre", options.towerDef), defBonus: 0 },
       },
     ],
   };
@@ -90,7 +100,7 @@ describe("combate", () => {
     const state = battleState({
       attacker: monster("a", 1800),
       defender: monster("d", 1000),
-      towerHp: 2000,
+      towerDef: 2000,
     });
     expect(getLegalTargets(state, 0, 0)).toEqual([{ kind: "monster", zoneIndex: 0 }]);
     expect(applyAction(state, 0, attack({ kind: "player" })).ok).toBe(false);
@@ -98,9 +108,9 @@ describe("combate", () => {
   });
 
   it("permite Torre e jogador quando não há monstro inimigo", () => {
-    const withTower = battleState({ attacker: monster("a", 1500), towerHp: 2000 });
+    const withTower = battleState({ attacker: monster("a", 1500), towerDef: 2000 });
     expect(getLegalTargets(withTower, 0, 0)).toEqual([{ kind: "tower" }, { kind: "player" }]);
-    const open = battleState({ attacker: monster("a", 1500), towerHp: null });
+    const open = battleState({ attacker: monster("a", 1500), towerDef: null });
     expect(getLegalTargets(open, 0, 0)).toEqual([{ kind: "player" }]);
   });
 
@@ -120,9 +130,9 @@ describe("combate", () => {
     expect(result.state.players[1].graveyard.map((card) => card.id)).toEqual(["d"]);
     expect(result.state.players[1].hp).toBe(4200);
     expect(result.state.players[0].hp).toBe(5000);
-    expect(result.state.players[0].monsterZone[0]?.id).toBe("a");
+    expect(result.state.players[0].monsterZone[0]?.card.id).toBe("a");
     expect(state.players[1].hp).toBe(5000);
-    expect(state.players[1].monsterZone[0]?.id).toBe("d");
+    expect(state.players[1].monsterZone[0]?.card.id).toBe("d");
   });
 
   it("destrói os dois monstros no empate sem alterar HP", () => {
@@ -144,7 +154,7 @@ describe("combate", () => {
   });
 
   it("impede o segundo ataque do mesmo monstro", () => {
-    const state = battleState({ attacker: monster("a", 1000), towerHp: null });
+    const state = battleState({ attacker: monster("a", 1000), towerDef: null });
     const first = applyAction(state, 0, attack({ kind: "player" }));
     expect(first.ok).toBe(true);
     if (!first.ok) {
@@ -154,17 +164,26 @@ describe("combate", () => {
     expect(applyAction(first.state, 0, attack({ kind: "player" })).ok).toBe(false);
   });
 
-  it("reduz a Torre e manda a carta ao limbo quando o hp chega a 0", () => {
-    const scratched = battleState({ attacker: monster("a", 400), towerHp: 1000 });
-    const partial = applyAction(scratched, 0, attack({ kind: "tower" }));
+  it("compara o ATK com a DEF da Torre e manda a carta ao limbo quando o ATK é maior", () => {
+    const weaker = battleState({ attacker: monster("a", 400), towerDef: 1000 });
+    const partial = applyAction(weaker, 0, attack({ kind: "tower" }));
     expect(partial.ok).toBe(true);
     if (!partial.ok) {
       return;
     }
-    expect(partial.state.players[1].towerZone?.hp).toBe(600);
+    expect(partial.state.players[1].towerZone).not.toBeNull();
+    expect(partial.state.players[0].hp).toBe(7400);
     expect(partial.state.players[1].limbo).toEqual([]);
 
-    const lethal = battleState({ attacker: monster("a", 1000), towerHp: 1000 });
+    const tied = battleState({ attacker: monster("a", 1000), towerDef: 1000 });
+    const even = applyAction(tied, 0, attack({ kind: "tower" }));
+    expect(even.ok).toBe(true);
+    if (even.ok) {
+      expect(even.state.players[1].towerZone).not.toBeNull();
+      expect(even.state.players[0].hp).toBe(8000);
+    }
+
+    const lethal = battleState({ attacker: monster("a", 1500), towerDef: 1000 });
     const destroyed = applyAction(lethal, 0, attack({ kind: "tower" }));
     expect(destroyed.ok).toBe(true);
     if (!destroyed.ok) {
@@ -172,14 +191,15 @@ describe("combate", () => {
     }
     expect(destroyed.state.players[1].towerZone).toBeNull();
     expect(destroyed.state.players[1].limbo.map((card) => card.id)).toEqual(["torre"]);
-    expect(destroyed.state.players[1].towerSummonedThisTurn).toBe(false);
+    expect(destroyed.state.players[0].hp).toBe(8000);
+    expect(destroyed.state.winner).toBeNull();
   });
 
   it("ataque direto reduz o HP e encerra a partida em player_hp", () => {
     const state = battleState({
       attacker: monster("a", 500),
       defenderHp: 500,
-      towerHp: null,
+      towerDef: null,
     });
     const events: string[] = [];
     const match = GameMatch.fromState(state);

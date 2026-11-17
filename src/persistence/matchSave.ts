@@ -7,7 +7,9 @@ import type {
   BoardState,
   Card,
   CardRarity,
+  Keyword,
   MonsterCard,
+  MonsterInstance,
   Phase,
   PlayerIndex,
   PlayerState,
@@ -126,7 +128,6 @@ function parseConfig(value: unknown): BoardState["config"] | null {
     biomeZones: value.biomeZones,
     openingHandSize: value.openingHandSize,
     handLimit: value.handLimit,
-    defaultTowerHp: value.defaultTowerHp,
   };
   if (Object.values(numbers).some((item) => typeof item !== "number")) {
     return null;
@@ -146,7 +147,6 @@ function parseConfig(value: unknown): BoardState["config"] | null {
       biomeZones: numbers.biomeZones as number,
       openingHandSize: numbers.openingHandSize as number,
       handLimit: numbers.handLimit as number,
-      defaultTowerHp: numbers.defaultTowerHp as number,
       winCondition: value.winCondition as WinCondition,
     });
   } catch {
@@ -170,12 +170,11 @@ function parsePlayer(value: unknown, config: BoardState["config"]): PlayerState 
   const hand = parseCardList(value.hand);
   const deck = parseCardList(value.deck);
   const graveyard = parseCardList(value.graveyard);
-  const limbo = parseTowerList(value.limbo);
+  const limbo = parseCardList(value.limbo);
   const monsterZone = parseMonsterZone(value.monsterZone, config.monsterSlots);
   const spellTrapZone = parseSpellTrapZone(value.spellTrapZone, config.spellTrapSlots);
   const towerZone = parseTowerInstance(value.towerZone);
   const biomeZone = parseBiomeSlot(value.biomeZone);
-  const attackedThisTurn = parseAttackFlags(value.attackedThisTurn, config.monsterSlots);
   if (
     hand === null ||
     deck === null ||
@@ -184,8 +183,7 @@ function parsePlayer(value: unknown, config: BoardState["config"]): PlayerState 
     monsterZone === null ||
     spellTrapZone === null ||
     towerZone === undefined ||
-    biomeZone === undefined ||
-    attackedThisTurn === null
+    biomeZone === undefined
   ) {
     return null;
   }
@@ -202,21 +200,7 @@ function parsePlayer(value: unknown, config: BoardState["config"]): PlayerState 
     limbo,
     towerSummonedThisTurn: value.towerSummonedThisTurn,
     normalSummonedThisTurn: value.normalSummonedThisTurn,
-    attackedThisTurn,
   };
-}
-
-function parseAttackFlags(value: unknown, slots: number): readonly boolean[] | null {
-  if (value === undefined) {
-    return Array.from({ length: slots }, () => false);
-  }
-  if (!Array.isArray(value) || value.length !== slots) {
-    return null;
-  }
-  if (value.some((item) => typeof item !== "boolean")) {
-    return null;
-  }
-  return value as readonly boolean[];
 }
 
 function parseCardList(value: unknown): readonly Card[] | null {
@@ -234,36 +218,41 @@ function parseCardList(value: unknown): readonly Card[] | null {
   return cards;
 }
 
-function parseTowerList(value: unknown): readonly TowerCard[] | null {
-  if (!Array.isArray(value)) {
-    return null;
-  }
-  const cards: TowerCard[] = [];
-  for (const entry of value) {
-    const card = parseCard(entry);
-    if (card === null || card.kind !== "tower") {
-      return null;
-    }
-    cards.push(card);
-  }
-  return cards;
-}
-
-function parseMonsterZone(value: unknown, slots: number): readonly (MonsterCard | null)[] | null {
+function parseMonsterZone(value: unknown, slots: number): readonly (MonsterInstance | null)[] | null {
   if (!Array.isArray(value) || value.length !== slots) {
     return null;
   }
-  const zone: (MonsterCard | null)[] = [];
+  const zone: (MonsterInstance | null)[] = [];
   for (const entry of value) {
     if (entry === null) {
       zone.push(null);
       continue;
     }
-    const card = parseCard(entry);
+    if (!isRecord(entry) || (entry.position !== "attack" && entry.position !== "defense")) {
+      return null;
+    }
+    const card = parseCard(entry.card);
     if (card === null || card.kind !== "monster") {
       return null;
     }
-    zone.push(card);
+    if (
+      typeof entry.summonedThisTurn !== "boolean" ||
+      typeof entry.changedPositionThisTurn !== "boolean" ||
+      typeof entry.attackedThisTurn !== "boolean"
+    ) {
+      return null;
+    }
+    if (entry.siege !== undefined && entry.siege !== true) {
+      return null;
+    }
+    zone.push({
+      card,
+      position: entry.position,
+      summonedThisTurn: entry.summonedThisTurn,
+      changedPositionThisTurn: entry.changedPositionThisTurn,
+      attackedThisTurn: entry.attackedThisTurn,
+      ...(entry.siege === true ? { siege: true } : {}),
+    });
   }
   return zone;
 }
@@ -301,12 +290,11 @@ function parseTowerInstance(value: unknown): TowerInstance | null | undefined {
   if (
     card === null ||
     card.kind !== "tower" ||
-    typeof value.hp !== "number" ||
-    typeof value.maxHp !== "number"
+    typeof value.defBonus !== "number"
   ) {
     return undefined;
   }
-  return { card, hp: value.hp, maxHp: value.maxHp };
+  return { card, defBonus: value.defBonus };
 }
 
 function parseBiomeSlot(value: unknown): BiomeCard | null | undefined {
@@ -365,22 +353,23 @@ function parseMonster(
   base: { readonly id: string; readonly name: string; readonly rarity: CardRarity },
   value: Record<string, unknown>,
 ): MonsterCard | null {
-  if (typeof value.atk !== "number" || typeof value.def !== "number") {
+  if (typeof value.level !== "number" || typeof value.atk !== "number" || typeof value.def !== "number") {
     return null;
   }
-  if (value.race !== undefined && typeof value.race !== "string") {
+  if (!Array.isArray(value.tags) || value.tags.some((tag) => typeof tag !== "string")) {
     return null;
   }
-  if (value.class !== undefined && typeof value.class !== "string") {
+  if (!Array.isArray(value.keywords) || value.keywords.some((keyword) => !isKeyword(keyword))) {
     return null;
   }
   return {
     ...base,
     kind: "monster",
+    level: value.level,
     atk: value.atk,
     def: value.def,
-    ...(typeof value.race === "string" ? { race: value.race } : {}),
-    ...(typeof value.class === "string" ? { class: value.class } : {}),
+    tags: value.tags,
+    keywords: value.keywords,
   };
 }
 
@@ -388,14 +377,26 @@ function parseTower(
   base: { readonly id: string; readonly name: string; readonly rarity: CardRarity },
   value: Record<string, unknown>,
 ): TowerCard | null {
-  if (value.hp !== undefined && typeof value.hp !== "number") {
+  if (typeof value.def !== "number") {
     return null;
   }
   return {
     ...base,
     kind: "tower",
-    ...(typeof value.hp === "number" ? { hp: value.hp } : {}),
+    def: value.def,
   };
+}
+
+function isKeyword(value: unknown): value is Keyword {
+  switch (value) {
+    case "impeto":
+    case "provocar":
+    case "perfurar":
+    case "ataqueTorre":
+      return true;
+    default:
+      return false;
+  }
 }
 
 function isRarity(value: unknown): value is CardRarity {

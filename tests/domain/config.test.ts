@@ -14,7 +14,6 @@ const CLASSIC: GameConfig = {
   biomeZones: 1,
   openingHandSize: 5,
   handLimit: 7,
-  defaultTowerHp: 4000,
   winCondition: "player_hp",
 };
 
@@ -30,7 +29,6 @@ const BLITZ: GameConfig = {
   biomeZones: 1,
   openingHandSize: 4,
   handLimit: 6,
-  defaultTowerHp: 2000,
   winCondition: "player_hp",
 };
 
@@ -49,7 +47,6 @@ const NUMERIC_FIELDS = [
   "biomeZones",
   "openingHandSize",
   "handLimit",
-  "defaultTowerHp",
 ] as const satisfies readonly NumericField[];
 
 function withNumericOverride(
@@ -77,8 +74,6 @@ function withNumericOverride(
       return { openingHandSize: value };
     case "handLimit":
       return { handLimit: value };
-    case "defaultTowerHp":
-      return { defaultTowerHp: value };
     default: {
       const unexpected: never = field;
       throw new Error(`Campo numérico inesperado: ${String(unexpected)}.`);

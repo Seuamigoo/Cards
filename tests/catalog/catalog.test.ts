@@ -32,14 +32,14 @@ describe("CardRegistry", () => {
       return;
     }
     expect(loaded.registry.version()).toBe(1);
-    expect(loaded.registry.publishedAt()).toBe("2026-11-16T00:00:00.000Z");
-    expect(loaded.registry.all()).toHaveLength(6);
-    expect(loaded.registry.byKind("monster")).toHaveLength(2);
-    expect(loaded.registry.byKind("spell")).toHaveLength(1);
-    expect(loaded.registry.byKind("trap")).toHaveLength(1);
-    expect(loaded.registry.byKind("tower")).toHaveLength(1);
-    expect(loaded.registry.byKind("biome")).toHaveLength(1);
-    expect(loaded.registry.get("torre-aurora")).toMatchObject({ kind: "tower", hp: 4000 });
+    expect(loaded.registry.publishedAt()).toBe("2026-11-17T00:00:00.000Z");
+    expect(loaded.registry.all()).toHaveLength(35);
+    expect(loaded.registry.byKind("monster")).toHaveLength(22);
+    expect(loaded.registry.byKind("spell")).toHaveLength(6);
+    expect(loaded.registry.byKind("trap")).toHaveLength(3);
+    expect(loaded.registry.byKind("tower")).toHaveLength(2);
+    expect(loaded.registry.byKind("biome")).toHaveLength(2);
+    expect(loaded.registry.get("cidadela-do-rei")).toMatchObject({ kind: "tower", def: 2200 });
     expect(loaded.registry.get("ausente")).toBeUndefined();
     for (const card of loaded.registry.all()) {
       expect(card.image?.src).toBe(PLACEHOLDER);

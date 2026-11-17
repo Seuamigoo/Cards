@@ -1,33 +1,29 @@
+import { ignoresMonsterBlock, towerDefense } from "./rules";
 import { opponentOf } from "./state";
-import type { BoardState, PlayerIndex } from "./state";
+import type { BoardState, MonsterInstance, PlayerIndex } from "./state";
 
 export type AttackTarget =
   | { readonly kind: "monster"; readonly zoneIndex: number }
   | { readonly kind: "tower" }
   | { readonly kind: "player" };
 
-/**
- * PROVISÓRIO: se o oponente controla monstro, só esses monstros são alvos.
- * Sem monstro, a Torre (se existir) e o jogador podem ser atacados.
- * Defesa fica para depois: todo monstro está em posição de ataque.
- */
 export function getLegalTargets(
   state: BoardState,
   playerIndex: PlayerIndex,
   attackerZoneIndex: number,
 ): readonly AttackTarget[] {
-  if (!canDeclareAttack(state, playerIndex, attackerZoneIndex)) {
+  const attacker = declaredAttacker(state, playerIndex, attackerZoneIndex);
+  if (attacker === null) {
     return [];
   }
   const opponent = state.players[opponentOf(playerIndex)];
-  const monsters: AttackTarget[] = [];
-  opponent.monsterZone.forEach((slot, zoneIndex) => {
-    if (slot !== null) {
-      monsters.push({ kind: "monster", zoneIndex });
-    }
-  });
+  const monsters = tauntTargets(opponent.monsterZone);
   if (monsters.length > 0) {
-    return monsters;
+    const targets: AttackTarget[] = monsters.map((zoneIndex) => ({ kind: "monster", zoneIndex }));
+    if (ignoresMonsterBlock(attacker) && opponent.towerZone !== null) {
+      targets.push({ kind: "tower" });
+    }
+    return targets;
   }
   const open: AttackTarget[] = [];
   if (opponent.towerZone !== null) {
@@ -42,18 +38,60 @@ export function canDeclareAttack(
   playerIndex: PlayerIndex,
   attackerZoneIndex: number,
 ): boolean {
+  return declaredAttacker(state, playerIndex, attackerZoneIndex) !== null;
+}
+
+export function skipsBattle(state: BoardState): boolean {
+  return state.turn === 1 && state.activePlayerIndex === 0 && state.phase === "main1";
+}
+
+function declaredAttacker(
+  state: BoardState,
+  playerIndex: PlayerIndex,
+  attackerZoneIndex: number,
+): MonsterInstance | null {
   if (state.winner !== null || state.phase !== "battle" || playerIndex !== state.activePlayerIndex) {
-    return false;
+    return null;
   }
   if (state.turn === 1 && playerIndex === 0) {
-    return false;
+    return null;
   }
-  const attacker = state.players[playerIndex];
-  if (!Number.isInteger(attackerZoneIndex) || attackerZoneIndex < 0 || attackerZoneIndex >= attacker.monsterZone.length) {
-    return false;
+  const zone = state.players[playerIndex].monsterZone;
+  if (!Number.isInteger(attackerZoneIndex) || attackerZoneIndex < 0 || attackerZoneIndex >= zone.length) {
+    return null;
   }
-  if (attacker.monsterZone[attackerZoneIndex] === null) {
-    return false;
+  const monster = zone[attackerZoneIndex];
+  if (monster === null || monster === undefined) {
+    return null;
   }
-  return attacker.attackedThisTurn[attackerZoneIndex] !== true;
+  if (monster.position !== "attack" || monster.attackedThisTurn) {
+    return null;
+  }
+  if (monster.summonedThisTurn && !monster.card.keywords.includes("impeto")) {
+    return null;
+  }
+  return monster;
+}
+
+function tauntTargets(zone: readonly (MonsterInstance | null)[]): number[] {
+  const present: number[] = [];
+  const taunts: number[] = [];
+  zone.forEach((slot, zoneIndex) => {
+    if (slot === null) {
+      return;
+    }
+    present.push(zoneIndex);
+    if (slot.position === "defense" && slot.card.keywords.includes("provocar")) {
+      taunts.push(zoneIndex);
+    }
+  });
+  return taunts.length > 0 ? taunts : present;
+}
+
+export function effectiveTowerDefense(state: BoardState, playerIndex: PlayerIndex): number | null {
+  const tower = state.players[playerIndex].towerZone;
+  if (tower === null) {
+    return null;
+  }
+  return towerDefense(tower);
 }

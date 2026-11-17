@@ -86,8 +86,7 @@ export class GameMatch {
       this.events.emit("tower:destroyed", {
         playerIndex,
         card: tower.card,
-        hp: tower.hp,
-        maxHp: tower.maxHp,
+        def: tower.card.def + tower.defBonus,
       });
     }
     return result;
@@ -143,6 +142,8 @@ export class GameMatch {
       case "playBiome":
         this.publishBiome(before, after);
         return;
+      case "changePosition":
+        return;
       case "attack":
         this.publishAttack(before, after, action.attackerZoneIndex, action.target);
         return;
@@ -197,8 +198,7 @@ export class GameMatch {
         this.events.emit("tower:destroyed", {
           playerIndex: opponent,
           card: previous.card,
-          hp: previous.hp,
-          maxHp: previous.maxHp,
+          def: previous.card.def + previous.defBonus,
         });
       }
     }
@@ -222,7 +222,7 @@ export class GameMatch {
     if (card === null || card === undefined || next !== null) {
       return;
     }
-    this.events.emit("monster:destroyed", { playerIndex, zoneIndex, card });
+    this.events.emit("monster:destroyed", { playerIndex, zoneIndex, card: card.card });
   }
 
   private publishMonster(before: BoardState, handIndex: number, zoneIndex: number): void {
@@ -243,8 +243,7 @@ export class GameMatch {
     this.events.emit("tower:summoned", {
       playerIndex,
       card: tower.card,
-      hp: tower.hp,
-      maxHp: tower.maxHp,
+      def: tower.card.def + tower.defBonus,
     });
   }
 

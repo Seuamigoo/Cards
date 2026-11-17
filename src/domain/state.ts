@@ -16,14 +16,27 @@ interface CardBase {
   readonly image?: CardImage;
 }
 
+export type BattlePosition = "attack" | "defense";
+
+export type Keyword = "impeto" | "provocar" | "perfurar" | "ataqueTorre";
+
 export interface MonsterCard extends CardBase {
   readonly kind: "monster";
+  readonly level: number;
   readonly atk: number;
   readonly def: number;
-  /** PROVISÓRIO (até GDD v0.2): tags de raça ainda não afetam regras. */
-  readonly race?: string;
-  /** PROVISÓRIO (até GDD v0.2): tags de classe ainda não afetam regras. */
-  readonly class?: string;
+  readonly tags: readonly string[];
+  readonly keywords: readonly Keyword[];
+}
+
+export interface MonsterInstance {
+  readonly card: MonsterCard;
+  readonly position: BattlePosition;
+  readonly summonedThisTurn: boolean;
+  readonly changedPositionThisTurn: boolean;
+  readonly attackedThisTurn: boolean;
+  /** Gancho do Aríete de Cerco: permite atacar a Torre com monstros inimigos em campo. */
+  readonly siege?: boolean;
 }
 
 export interface SpellCard extends CardBase {
@@ -36,8 +49,7 @@ export interface TrapCard extends CardBase {
 
 export interface TowerCard extends CardBase {
   readonly kind: "tower";
-  /** PROVISÓRIO (até GDD v0.2): sem hp, a Torre usa config.defaultTowerHp. */
-  readonly hp?: number;
+  readonly def: number;
 }
 
 export interface BiomeCard extends CardBase {
@@ -50,8 +62,7 @@ export type SpellTrapCard = SpellCard | TrapCard;
 
 export interface TowerInstance {
   readonly card: TowerCard;
-  readonly hp: number;
-  readonly maxHp: number;
+  readonly defBonus: number;
 }
 
 export interface PlayerState {
@@ -59,16 +70,14 @@ export interface PlayerState {
   readonly hp: number;
   readonly hand: readonly Card[];
   readonly deck: readonly Card[];
-  readonly monsterZone: readonly (MonsterCard | null)[];
+  readonly monsterZone: readonly (MonsterInstance | null)[];
   readonly spellTrapZone: readonly (SpellTrapCard | null)[];
   readonly towerZone: TowerInstance | null;
   readonly biomeZone: BiomeCard | null;
   readonly graveyard: readonly Card[];
-  readonly limbo: readonly TowerCard[];
+  readonly limbo: readonly Card[];
   readonly towerSummonedThisTurn: boolean;
   readonly normalSummonedThisTurn: boolean;
-  /** PROVISÓRIO: um booleano por slot; todo monstro entra em posição de ataque. */
-  readonly attackedThisTurn: readonly boolean[];
 }
 
 export type Phase = "draw" | "main1" | "battle" | "main2" | "end";
@@ -107,11 +116,12 @@ export function copyCard<T extends Card>(card: T): T {
         rarity: card.rarity,
         ...image,
         kind: "monster",
+        level: card.level,
         atk: card.atk,
         def: card.def,
-        ...(card.race !== undefined ? { race: card.race } : {}),
-        ...(card.class !== undefined ? { class: card.class } : {}),
-      } as T;
+        tags: [...card.tags],
+        keywords: [...card.keywords],
+      } as unknown as T;
     case "spell":
       return { id: card.id, name: card.name, rarity: card.rarity, ...image, kind: "spell" } as T;
     case "trap":
@@ -123,7 +133,7 @@ export function copyCard<T extends Card>(card: T): T {
         rarity: card.rarity,
         ...image,
         kind: "tower",
-        ...(card.hp !== undefined ? { hp: card.hp } : {}),
+        def: card.def,
       } as T;
     case "biome":
       return { id: card.id, name: card.name, rarity: card.rarity, ...image, kind: "biome" } as T;
@@ -218,7 +228,7 @@ function emptyPlayer(
     hp: config.playerHp,
     hand,
     deck,
-    monsterZone: emptySlots<MonsterCard>(config.monsterSlots),
+    monsterZone: emptySlots<MonsterInstance>(config.monsterSlots),
     spellTrapZone: emptySlots<SpellTrapCard>(config.spellTrapSlots),
     towerZone: null,
     biomeZone: null,
@@ -226,7 +236,6 @@ function emptyPlayer(
     limbo: [],
     towerSummonedThisTurn: false,
     normalSummonedThisTurn: false,
-    attackedThisTurn: emptySlots<boolean>(config.monsterSlots).map(() => false),
   };
 }
 
@@ -235,19 +244,29 @@ function clonePlayer(player: PlayerState): PlayerState {
     ...player,
     hand: player.hand.map((card) => copyCard(card)),
     deck: player.deck.map((card) => copyCard(card)),
-    monsterZone: player.monsterZone.map((slot) => (slot === null ? null : copyCard(slot))),
+    monsterZone: player.monsterZone.map((slot) => (slot === null ? null : copyMonsterInstance(slot))),
     spellTrapZone: player.spellTrapZone.map((slot) => (slot === null ? null : copyCard(slot))),
     towerZone:
       player.towerZone === null
         ? null
         : {
             card: copyCard(player.towerZone.card),
-            hp: player.towerZone.hp,
-            maxHp: player.towerZone.maxHp,
+            defBonus: player.towerZone.defBonus,
           },
     biomeZone: player.biomeZone === null ? null : copyCard(player.biomeZone),
     graveyard: player.graveyard.map((card) => copyCard(card)),
     limbo: player.limbo.map((card) => copyCard(card)),
+  };
+}
+
+function copyMonsterInstance(slot: MonsterInstance): MonsterInstance {
+  return {
+    card: copyCard(slot.card),
+    position: slot.position,
+    summonedThisTurn: slot.summonedThisTurn,
+    changedPositionThisTurn: slot.changedPositionThisTurn,
+    attackedThisTurn: slot.attackedThisTurn,
+    ...(slot.siege === true ? { siege: true } : {}),
   };
 }
 
@@ -277,6 +296,5 @@ function sealPlayer(player: PlayerState): PlayerState {
     towerZone: player.towerZone === null ? null : Object.freeze({ ...player.towerZone }),
     graveyard: Object.freeze([...player.graveyard]),
     limbo: Object.freeze([...player.limbo]),
-    attackedThisTurn: Object.freeze([...player.attackedThisTurn]),
   });
 }

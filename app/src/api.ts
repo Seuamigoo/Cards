@@ -98,7 +98,10 @@ export interface CardDraft {
   readonly name: string;
   readonly rarity: string;
   readonly kind: string;
+  readonly level?: number;
   readonly atk?: number;
   readonly def?: number;
+  readonly tags?: readonly string[];
+  readonly keywords?: readonly string[];
   readonly status: "draft" | "published";
 }

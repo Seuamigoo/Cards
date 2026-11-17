@@ -40,6 +40,9 @@ const cardBody = z.object({
   atk: z.number().int().nonnegative().optional(),
   def: z.number().int().nonnegative().optional(),
   hp: z.number().int().nonnegative().optional(),
+  level: z.number().int().min(1).max(8).optional(),
+  tags: z.array(z.string().min(1)).optional(),
+  keywords: z.array(z.enum(["impeto", "provocar", "perfurar", "ataqueTorre"])).optional(),
   race: z.string().min(1).optional(),
   class: z.string().min(1).optional(),
   status: z.enum(["draft", "published"]).optional(),
@@ -319,6 +322,9 @@ function optionalCardFields(input: z.infer<typeof cardBody>): Prisma.CardRecordC
     ...(input.atk !== undefined ? { atk: input.atk } : {}),
     ...(input.def !== undefined ? { def: input.def } : {}),
     ...(input.hp !== undefined ? { hp: input.hp } : {}),
+    ...(input.level !== undefined ? { level: input.level } : {}),
+    ...(input.tags !== undefined ? { tags: JSON.stringify(input.tags) } : {}),
+    ...(input.keywords !== undefined ? { keywords: JSON.stringify(input.keywords) } : {}),
     ...(input.race !== undefined ? { race: input.race } : {}),
     ...(input.class !== undefined ? { cardClass: input.class } : {}),
   };
@@ -331,6 +337,9 @@ function cardPatch(input: {
   readonly atk?: number | undefined;
   readonly def?: number | undefined;
   readonly hp?: number | undefined;
+  readonly level?: number | undefined;
+  readonly tags?: readonly string[] | undefined;
+  readonly keywords?: readonly ("impeto" | "provocar" | "perfurar" | "ataqueTorre")[] | undefined;
   readonly race?: string | undefined;
   readonly class?: string | undefined;
   readonly status?: "draft" | "published" | undefined;
@@ -353,6 +362,15 @@ function cardPatch(input: {
   }
   if (input.hp !== undefined) {
     data.hp = input.hp;
+  }
+  if (input.level !== undefined) {
+    data.level = input.level;
+  }
+  if (input.tags !== undefined) {
+    data.tags = JSON.stringify(input.tags);
+  }
+  if (input.keywords !== undefined) {
+    data.keywords = JSON.stringify(input.keywords);
   }
   if (input.race !== undefined) {
     data.race = input.race;
