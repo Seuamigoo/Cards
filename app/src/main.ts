@@ -7,7 +7,7 @@ import type { Card } from "../../src/domain/index";
 import { MemoryStorageAdapter } from "../../src/persistence/index";
 import "./style.css";
 
-type Screen = "menu" | "collection" | "login" | "register" | "admin";
+type Screen = "menu" | "collection" | "login" | "register" | "admin" | "online";
 
 let loaded: CardRegistryResult = CardRegistry.fromJSON(JSON.stringify(catalogFile));
 let session: Session | null = null;
@@ -39,6 +39,9 @@ function draw(): void {
     case "admin":
       app.append(renderAdmin());
       return;
+    case "online":
+      app.append(renderOnline());
+      return;
     default: {
       const unexpected: never = screen;
       throw new Error(`Tela inválida: ${String(unexpected)}.`);
@@ -55,7 +58,12 @@ function renderMenu(): HTMLElement {
   const nav = document.createElement("nav");
   nav.append(
     disabledButton("Jogar contra bot"),
-    disabledButton("Online"),
+    session === null
+      ? disabledButton("Online")
+      : actionButton("Online", () => {
+          screen = "online";
+          draw();
+        }),
     actionButton("Coleção", () => {
       screen = "collection";
       draw();
@@ -328,6 +336,44 @@ async function publishAdmin(status: HTMLElement): Promise<void> {
     return;
   }
   status.textContent = await publishCatalog(session.accessToken);
+}
+
+function renderOnline(): HTMLElement {
+  const main = document.createElement("main");
+  const title = document.createElement("h1");
+  title.textContent = "Online";
+  const log = document.createElement("p");
+  log.textContent = "Crie uma sala ou entre com um código.";
+  const code = field("text", "Código");
+  main.append(
+    title,
+    log,
+    actionButton("Criar sala", () => {
+      void openRoom(null, log);
+    }),
+    code.label,
+    actionButton("Entrar na sala", () => {
+      void openRoom(code.input.value, log);
+    }),
+    actionButton("Voltar", () => {
+      screen = "menu";
+      draw();
+    }),
+  );
+  return main;
+}
+
+async function openRoom(code: string | null, log: HTMLElement): Promise<void> {
+  if (session === null) {
+    return;
+  }
+  const socket = new WebSocket(`${apiUrl("/ws").replace(/^http/, "ws")}?token=${session.accessToken}`);
+  socket.addEventListener("message", (event) => {
+    log.textContent = String(event.data);
+  });
+  socket.addEventListener("open", () => {
+    socket.send(JSON.stringify(code === null ? { type: "create" } : { type: "join", code }));
+  });
 }
 
 function field(type: string, label: string): { readonly label: HTMLLabelElement; readonly input: HTMLInputElement } {
