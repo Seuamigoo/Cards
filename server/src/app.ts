@@ -15,6 +15,7 @@ import type { ServerEnv } from "./env";
 import { imageExtension } from "./imageStorage";
 import type { ImageStorage } from "./imageStorage";
 import { LocalImageStorage } from "./imageStorage";
+import { registerOnline } from "./online";
 import { hashPassword, verifyPassword } from "./passwords";
 import { hashToken, newRefreshToken, readAccess, signAccess } from "./tokens";
 import type { AccessClaims } from "./tokens";
@@ -75,7 +76,7 @@ export interface BuildOptions {
 export async function buildApp(options: BuildOptions = {}) {
   const env = options.env ?? readEnv();
   const prisma = options.prisma ?? new PrismaClient({ datasources: { db: { url: env.databaseUrl } } });
-  const uploadsDir = options.uploadsDir ?? resolve(process.cwd(), "server/uploads");
+  const uploadsDir = options.uploadsDir ?? resolve(process.cwd(), "uploads");
   const images = options.images ?? new LocalImageStorage(uploadsDir);
   const app = Fastify({ logger: false });
   app.addHook("onClose", async () => {
@@ -86,6 +87,7 @@ export async function buildApp(options: BuildOptions = {}) {
   await app.register(multipart, { limits: { fileSize: MAX_IMAGE_BYTES } });
   await app.register(rateLimit, { global: false });
   await app.register(fastifyStatic, { root: uploadsDir, prefix: "/uploads/" });
+  await registerOnline(app, prisma, env);
 
   app.get("/health", async () => ({ ok: true }));
 
