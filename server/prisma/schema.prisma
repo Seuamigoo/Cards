@@ -1,0 +1,59 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String         @id @default(cuid())
+  email         String         @unique
+  username      String         @unique
+  passwordHash  String
+  role          String         @default("player")
+  createdAt     DateTime       @default(now())
+  profile       PlayerProfile?
+  refreshTokens RefreshToken[]
+}
+
+model RefreshToken {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tokenHash String   @unique
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+}
+
+model CardRecord {
+  id        String   @id @default(cuid())
+  name      String
+  rarity    String
+  kind      String
+  atk       Int?
+  def       Int?
+  hp        Int?
+  race      String?
+  cardClass String?  @map("class")
+  imagePath String?
+  status    String   @default("draft")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model CatalogVersion {
+  id          String   @id @default(cuid())
+  version     Int      @unique
+  publishedAt DateTime
+  json        String
+}
+
+model PlayerProfile {
+  id        String   @id @default(cuid())
+  userId    String   @unique
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  json      String
+  updatedAt DateTime @updatedAt
+}
