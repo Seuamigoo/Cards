@@ -15,6 +15,7 @@ const CLASSIC: GameConfig = {
   openingHandSize: 5,
   handLimit: 7,
   winCondition: "player_hp",
+  enableConvergence: false,
 };
 
 const BLITZ: GameConfig = {
@@ -30,6 +31,7 @@ const BLITZ: GameConfig = {
   openingHandSize: 4,
   handLimit: 6,
   winCondition: "player_hp",
+  enableConvergence: false,
 };
 
 type NumericField = {

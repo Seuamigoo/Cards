@@ -1,7 +1,7 @@
 import { canDeclareAttack, getLegalTargets, skipsBattle } from "./combatRules";
 import type { AttackTarget } from "./combatRules";
 import { nextPhase } from "./phases";
-import { combinations, hasKeyword, towerDefense, tributesRequired } from "./rules";
+import { AGULHA_CARD_ID, combinations, hasKeyword, isMestico, materialsCoverParents, parentRaces, towerDefense, tributesRequired } from "./rules";
 import { copyCard, opponentOf } from "./state";
 import type {
   BattlePosition,
@@ -31,6 +31,14 @@ export type Action =
   | { readonly type: "summonTower"; readonly handIndex: number }
   | { readonly type: "playBiome"; readonly handIndex: number }
   | {
+      readonly type: "converge";
+      readonly lineageIndex: number;
+      readonly zoneIndex: number;
+      readonly position: BattlePosition;
+      readonly materialZoneIndexes: readonly number[];
+      readonly materialHandIndex?: number;
+    }
+  | {
       readonly type: "attack";
       readonly attackerZoneIndex: number;
       readonly target: AttackTarget;
@@ -53,6 +61,8 @@ interface DraftPlayer {
   limbo: Card[];
   towerSummonedThisTurn: boolean;
   normalSummonedThisTurn: boolean;
+  lineageDeck: MonsterCard[];
+  convergedThisTurn: boolean;
 }
 
 export function getLegalActions(state: BoardState, playerIndex: PlayerIndex): readonly Action[] {
@@ -107,6 +117,10 @@ export function getLegalActions(state: BoardState, playerIndex: PlayerIndex): re
     }
   });
 
+  if (state.config.enableConvergence) {
+    actions.push(...listConvergence(player));
+  }
+
   player.monsterZone.forEach((slot, zoneIndex) => {
     if (slot !== null && !slot.summonedThisTurn && !slot.attackedThisTurn && !slot.changedPositionThisTurn) {
       actions.push({ type: "changePosition", zoneIndex });
@@ -141,6 +155,8 @@ export function applyAction(
       return applySummonTower(state, playerIndex, action.handIndex);
     case "playBiome":
       return applyPlayBiome(state, playerIndex, action.handIndex);
+    case "converge":
+      return applyConverge(state, playerIndex, action);
     case "attack":
       return applyAttack(state, playerIndex, action.attackerZoneIndex, action.target);
     default: {
@@ -176,6 +192,7 @@ function applyAdvance(state: BoardState): ActionResult {
   discardToHandLimit(ending, state.config.handLimit);
   ending.normalSummonedThisTurn = false;
   ending.towerSummonedThisTurn = false;
+  ending.convergedThisTurn = false;
   ending.monsterZone = ending.monsterZone.map((slot) =>
     slot === null
       ? null
@@ -490,6 +507,10 @@ function destroyMonster(player: DraftPlayer, zoneIndex: number): void {
   const zone = [...player.monsterZone];
   zone[zoneIndex] = null;
   player.monsterZone = zone;
+  if (isMestico(slot.card)) {
+    player.limbo = [...player.limbo, slot.card];
+    return;
+  }
   player.graveyard = [...player.graveyard, slot.card];
 }
 
@@ -604,6 +625,8 @@ function draftOf(player: PlayerState): DraftPlayer {
     limbo: [...player.limbo],
     towerSummonedThisTurn: player.towerSummonedThisTurn,
     normalSummonedThisTurn: player.normalSummonedThisTurn,
+    lineageDeck: [...player.lineageDeck],
+    convergedThisTurn: player.convergedThisTurn,
   };
 }
 
@@ -621,7 +644,182 @@ function commitPlayer(draft: DraftPlayer): PlayerState {
     limbo: draft.limbo,
     towerSummonedThisTurn: draft.towerSummonedThisTurn,
     normalSummonedThisTurn: draft.normalSummonedThisTurn,
+    lineageDeck: draft.lineageDeck,
+    convergedThisTurn: draft.convergedThisTurn,
   };
+}
+
+function applyConverge(
+  state: BoardState,
+  playerIndex: PlayerIndex,
+  action: Extract<Action, { type: "converge" }>,
+): ActionResult {
+  if (!state.config.enableConvergence) {
+    return failure("Convergência está desligada.");
+  }
+  const phaseError = mainPhaseError(state.phase);
+  if (phaseError !== null) {
+    return failure(phaseError);
+  }
+  const player = state.players[playerIndex];
+  if (player.convergedThisTurn) {
+    return failure("Só é permitida uma Convergência por turno.");
+  }
+  const mestico = player.lineageDeck[action.lineageIndex];
+  if (mestico === undefined || !isMestico(mestico)) {
+    return failure("O Deck de Linhagem não tem esse Mestiço.");
+  }
+  if (action.position !== "attack" && action.position !== "defense") {
+    return failure("Posição de invocação inválida.");
+  }
+  const materials = readConvergenceMaterials(player, mestico, action);
+  if (!materials.ok) {
+    return failure(materials.error);
+  }
+
+  const draft = draftOf(player);
+  const zoneSlots = [...draft.monsterZone];
+  for (const zoneIndex of materials.zoneIndexes) {
+    const slot = zoneSlots[zoneIndex];
+    if (slot === null || slot === undefined) {
+      return failure("Material de Convergência inválido.");
+    }
+    zoneSlots[zoneIndex] = null;
+    draft.limbo = [...draft.limbo, copyCard(slot.card)];
+  }
+  if (materials.handIndex !== null) {
+    const handCard = draft.hand[materials.handIndex];
+    if (handCard === undefined || handCard.kind !== "monster") {
+      return failure("Material de Convergência inválido.");
+    }
+    draft.hand = withoutIndex(draft.hand, materials.handIndex);
+    draft.limbo = [...draft.limbo, copyCard(handCard)];
+  }
+  zoneSlots[action.zoneIndex] = {
+    card: copyCard(mestico),
+    position: action.position,
+    summonedThisTurn: true,
+    changedPositionThisTurn: false,
+    attackedThisTurn: false,
+  };
+  draft.monsterZone = zoneSlots;
+  draft.lineageDeck = withoutIndex(draft.lineageDeck, action.lineageIndex);
+  draft.convergedThisTurn = true;
+  return success(commitBoard(state, replacePlayer(state.players, playerIndex, commitPlayer(draft))));
+}
+
+function readConvergenceMaterials(
+  player: PlayerState,
+  mestico: MonsterCard,
+  action: Extract<Action, { type: "converge" }>,
+): { ok: true; zoneIndexes: readonly number[]; handIndex: number | null } | { ok: false; error: string } {
+  const handIndex = action.materialHandIndex ?? null;
+  const zoneIndexes = action.materialZoneIndexes;
+  const fromHand = handIndex !== null;
+  if (fromHand && !hasAgulha(player)) {
+    return { ok: false, error: "Sem a Agulha da Convergência, os dois materiais vêm do campo." };
+  }
+  if (zoneIndexes.length !== (fromHand ? 1 : 2) || new Set(zoneIndexes).size !== zoneIndexes.length) {
+    return { ok: false, error: "Convergência exige dois materiais, um de cada Raça matriz." };
+  }
+  const races: string[][] = [];
+  for (const zoneIndex of zoneIndexes) {
+    const slot = player.monsterZone[zoneIndex];
+    if (slot === null || slot === undefined) {
+      return { ok: false, error: "Material de Convergência inválido." };
+    }
+    races.push([...parentRaces(slot.card)]);
+  }
+  if (handIndex !== null) {
+    const handCard = cardAt(player, handIndex);
+    if (handCard === null || handCard.kind !== "monster") {
+      return { ok: false, error: "Material de Convergência inválido." };
+    }
+    races.push([...parentRaces(handCard)]);
+  }
+  if (!materialsCoverParents(parentRaces(mestico), races)) {
+    return { ok: false, error: "Os materiais precisam ser um de cada Raça matriz." };
+  }
+  const occupied = emptyZoneError(player.monsterZone, action.zoneIndex, "monstro");
+  if (occupied !== null && !zoneIndexes.includes(action.zoneIndex)) {
+    return { ok: false, error: occupied };
+  }
+  return { ok: true, zoneIndexes, handIndex };
+}
+
+function hasAgulha(player: PlayerState): boolean {
+  return player.towerZone?.card.id === AGULHA_CARD_ID;
+}
+
+function listConvergence(player: PlayerState): Action[] {
+  if (player.convergedThisTurn) {
+    return [];
+  }
+  const actions: Action[] = [];
+  const agulha = hasAgulha(player);
+  player.lineageDeck.forEach((card, lineageIndex) => {
+    if (!isMestico(card)) {
+      return;
+    }
+    const parents = parentRaces(card);
+    const field = player.monsterZone.flatMap((slot, index) =>
+      slot === null ? [] : [{ index, races: parentRaces(slot.card) }],
+    );
+    for (let left = 0; left < field.length; left += 1) {
+      for (let right = left + 1; right < field.length; right += 1) {
+        const first = field[left];
+        const second = field[right];
+        if (first === undefined || second === undefined) {
+          continue;
+        }
+        if (!materialsCoverParents(parents, [first.races, second.races])) {
+          continue;
+        }
+        pushConvergence(player, actions, lineageIndex, [first.index, second.index]);
+      }
+    }
+    if (!agulha) {
+      return;
+    }
+    player.hand.forEach((handCard, handIndex) => {
+      if (handCard.kind !== "monster") {
+        return;
+      }
+      const handRaces = parentRaces(handCard);
+      for (const material of field) {
+        if (!materialsCoverParents(parents, [material.races, handRaces])) {
+          continue;
+        }
+        pushConvergence(player, actions, lineageIndex, [material.index], handIndex);
+      }
+    });
+  });
+  return actions;
+}
+
+function pushConvergence(
+  player: PlayerState,
+  actions: Action[],
+  lineageIndex: number,
+  materialZoneIndexes: readonly number[],
+  materialHandIndex?: number,
+): void {
+  const vacated = new Set(materialZoneIndexes);
+  player.monsterZone.forEach((slot, zoneIndex) => {
+    if (slot !== null && !vacated.has(zoneIndex)) {
+      return;
+    }
+    for (const position of ["attack", "defense"] as const) {
+      actions.push({
+        type: "converge",
+        lineageIndex,
+        zoneIndex,
+        position,
+        materialZoneIndexes,
+        ...(materialHandIndex !== undefined ? { materialHandIndex } : {}),
+      });
+    }
+  });
 }
 
 function listSummons(player: PlayerState, handIndex: number, card: MonsterCard): Action[] {

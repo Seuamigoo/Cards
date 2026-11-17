@@ -19,8 +19,9 @@ export interface GameConfig {
   readonly biomeZones: number;
   readonly openingHandSize: number;
   readonly handLimit: number;
-  /** PROVISÓRIO (até GDD v0.2) */
   readonly winCondition: WinCondition;
+  /** Linhagem ainda não aprovada: Convergência fica fora das ações enquanto for false. */
+  readonly enableConvergence: boolean;
 }
 
 const CLASSIC_CONFIG: GameConfig = {
@@ -36,6 +37,7 @@ const CLASSIC_CONFIG: GameConfig = {
   openingHandSize: 5,
   handLimit: 7,
   winCondition: "player_hp",
+  enableConvergence: false,
 };
 
 const BLITZ_CONFIG: GameConfig = {
@@ -51,6 +53,7 @@ const BLITZ_CONFIG: GameConfig = {
   openingHandSize: 4,
   handLimit: 6,
   winCondition: "player_hp",
+  enableConvergence: false,
 };
 
 export const MODE_CONFIGS: Readonly<Record<GameMode, GameConfig>> = Object.freeze({
@@ -87,6 +90,7 @@ function copyConfig(
     openingHandSize: overrides?.openingHandSize ?? base.openingHandSize,
     handLimit: overrides?.handLimit ?? base.handLimit,
     winCondition: overrides?.winCondition ?? base.winCondition,
+    enableConvergence: overrides?.enableConvergence ?? base.enableConvergence,
   };
 }
 
@@ -101,6 +105,11 @@ function assertValidConfig(config: GameConfig): void {
   assertPositiveInteger("biomeZones", config.biomeZones);
   assertPositiveInteger("openingHandSize", config.openingHandSize);
   assertPositiveInteger("handLimit", config.handLimit);
+  if (typeof config.enableConvergence !== "boolean") {
+    throw new Error(
+      `Campo "enableConvergence" deve ser booleano. Recebido: ${formatReceived(config.enableConvergence)}.`,
+    );
+  }
 
   if (config.mainDeckMin > config.mainDeckMax) {
     throw new Error(

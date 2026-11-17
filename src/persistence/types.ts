@@ -1,4 +1,4 @@
-export const SAVE_VERSION = 2;
+export const SAVE_VERSION = 3;
 
 export interface StorageAdapter {
   get(key: string): Promise<string | null>;

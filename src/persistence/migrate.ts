@@ -41,6 +41,8 @@ function step(version: number, raw: unknown): PersistResult<unknown> {
       return migrateV0ToV1(raw);
     case 1:
       return migrateV1ToV2(raw);
+    case 2:
+      return migrateV2ToV3(raw);
     default:
       return persistFail("migration", `Sem migração a partir da versão ${version}.`);
   }
@@ -89,12 +91,47 @@ function migrateV1ToV2(raw: unknown): PersistResult<unknown> {
     return persistFail("migration", "Save v1 inválido.");
   }
   if ("state" in raw) {
-    return persistOk({ version: SAVE_VERSION, state: upgradeBoard(raw.state) });
+    return persistOk({ version: 2, state: upgradeBoard(raw.state) });
+  }
+  if ("playerId" in raw) {
+    return persistOk({ ...raw, version: 2 });
+  }
+  return persistFail("migration", "Save v1 sem partida ou perfil.");
+}
+
+function migrateV2ToV3(raw: unknown): PersistResult<unknown> {
+  if (!isRecord(raw)) {
+    return persistFail("migration", "Save v2 inválido.");
+  }
+  if ("state" in raw) {
+    return persistOk({ version: SAVE_VERSION, state: addConvergence(raw.state) });
   }
   if ("playerId" in raw) {
     return persistOk({ ...raw, version: SAVE_VERSION });
   }
-  return persistFail("migration", "Save v1 sem partida ou perfil.");
+  return persistFail("migration", "Save v2 sem partida ou perfil.");
+}
+
+function addConvergence(value: unknown): unknown {
+  if (!isRecord(value)) {
+    return value;
+  }
+  const config = isRecord(value.config)
+    ? { ...value.config, enableConvergence: value.config.enableConvergence === true }
+    : value.config;
+  const players = Array.isArray(value.players) ? value.players.map(addConvergencePlayer) : value.players;
+  return { ...value, config, players };
+}
+
+function addConvergencePlayer(value: unknown): unknown {
+  if (!isRecord(value)) {
+    return value;
+  }
+  return {
+    ...value,
+    lineageDeck: Array.isArray(value.lineageDeck) ? value.lineageDeck : [],
+    convergedThisTurn: value.convergedThisTurn === true,
+  };
 }
 
 function upgradeBoard(value: unknown): unknown {

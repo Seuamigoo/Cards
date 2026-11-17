@@ -78,6 +78,8 @@ export interface PlayerState {
   readonly limbo: readonly Card[];
   readonly towerSummonedThisTurn: boolean;
   readonly normalSummonedThisTurn: boolean;
+  readonly lineageDeck: readonly MonsterCard[];
+  readonly convergedThisTurn: boolean;
 }
 
 export type Phase = "draw" | "main1" | "battle" | "main2" | "end";
@@ -161,10 +163,11 @@ export function createInitialState(
   playerIds: readonly [string, string],
   decks?: readonly [readonly Card[], readonly Card[]],
   rng?: Rng,
+  lineageDecks?: readonly [readonly MonsterCard[], readonly MonsterCard[]],
 ): BoardState {
   const random = rng ?? createSeededRng(1);
-  const first = createPlayer(playerIds[0], config, decks?.[0], random);
-  const second = createPlayer(playerIds[1], config, decks?.[1], random);
+  const first = createPlayer(playerIds[0], config, decks?.[0], random, lineageDecks?.[0]);
+  const second = createPlayer(playerIds[1], config, decks?.[1], random, lineageDecks?.[1]);
   let winner: PlayerIndex | null = null;
   if (decks !== undefined && first.lost) {
     winner = 1;
@@ -198,9 +201,11 @@ function createPlayer(
   config: GameConfig,
   deck: readonly Card[] | undefined,
   rng: Rng,
+  lineageDeck: readonly MonsterCard[] | undefined,
 ): { readonly player: PlayerState; readonly lost: boolean } {
+  const lineage = (lineageDeck ?? []).map((card) => copyCard(card));
   if (deck === undefined) {
-    return { player: emptyPlayer(id, config, [], []), lost: false };
+    return { player: emptyPlayer(id, config, [], [], lineage), lost: false };
   }
 
   const shuffled = shuffle(deck.map((card) => copyCard(card)), rng);
@@ -214,7 +219,7 @@ function createPlayer(
     }
     hand.push(card);
   }
-  return { player: emptyPlayer(id, config, hand, shuffled), lost };
+  return { player: emptyPlayer(id, config, hand, shuffled, lineage), lost };
 }
 
 function emptyPlayer(
@@ -222,6 +227,7 @@ function emptyPlayer(
   config: GameConfig,
   hand: readonly Card[],
   deck: readonly Card[],
+  lineageDeck: readonly MonsterCard[],
 ): PlayerState {
   return {
     id,
@@ -236,6 +242,8 @@ function emptyPlayer(
     limbo: [],
     towerSummonedThisTurn: false,
     normalSummonedThisTurn: false,
+    lineageDeck,
+    convergedThisTurn: false,
   };
 }
 
@@ -256,6 +264,7 @@ function clonePlayer(player: PlayerState): PlayerState {
     biomeZone: player.biomeZone === null ? null : copyCard(player.biomeZone),
     graveyard: player.graveyard.map((card) => copyCard(card)),
     limbo: player.limbo.map((card) => copyCard(card)),
+    lineageDeck: player.lineageDeck.map((card) => copyCard(card)),
   };
 }
 

@@ -49,6 +49,8 @@ function board(attacker: MonsterInstance | null, defender: MonsterInstance | nul
     limbo: [],
     towerSummonedThisTurn: false,
     normalSummonedThisTurn: false,
+    lineageDeck: [],
+    convergedThisTurn: false,
   });
   return {
     config,

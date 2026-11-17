@@ -453,6 +453,8 @@ function labelAction(state: BoardState, action: Action): string {
       return "Invocar Torre";
     case "playBiome":
       return "Jogar Bioma";
+    case "converge":
+      return `Convergência ${state.players[0].lineageDeck[action.lineageIndex]?.name ?? "Mestiço"}`;
     case "attack":
       return `Atacar ${action.target.kind}`;
     default: {

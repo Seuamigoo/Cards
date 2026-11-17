@@ -51,6 +51,8 @@ function arena(options: {
     limbo: [],
     towerSummonedThisTurn: false,
     normalSummonedThisTurn: false,
+    lineageDeck: [],
+    convergedThisTurn: false,
   });
   const active = options.active ?? 0;
   return {
