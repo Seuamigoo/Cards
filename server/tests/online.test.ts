@@ -190,7 +190,7 @@ interface LiveMessage {
   message: string;
   code: string;
   seats: Array<{ ready?: boolean } | null>;
-  state: { turn: number; players: Array<{ hand: unknown[]; deck: unknown[]; deckCount: number }> };
+  state: { turn: number; winner: number | null; players: Array<{ hand: unknown[]; deck: unknown[]; deckCount: number }> };
 }
 
 function track(socket: WebSocket): {
