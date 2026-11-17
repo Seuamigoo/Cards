@@ -78,6 +78,7 @@ function normalizePlayer(value: unknown): unknown {
     limbo: "limbo" in value ? value.limbo : [],
     towerSummonedThisTurn: "towerSummonedThisTurn" in value ? value.towerSummonedThisTurn : false,
     normalSummonedThisTurn: "normalSummonedThisTurn" in value ? value.normalSummonedThisTurn : false,
+    attackedThisTurn: "attackedThisTurn" in value ? value.attackedThisTurn : [],
   };
 }
 
