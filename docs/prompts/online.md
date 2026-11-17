@@ -1,6 +1,6 @@
-# Prompt — Partida online
+# Partida online
 
-Cole este texto inteiro no Cursor depois que o combate (03) e o servidor (04) estiverem na branch base. Se ainda não foram mergeados, empilhe nesta branch e declare a base no PR.
+Cole este texto inteiro no Cursor depois que o combate e o servidor estiverem na branch base. Se ainda não foram mergeados, empilhe nesta branch e declare a base no PR.
 
 ```
 Implemente a partida online autoritativa do TCG Convergência. IP própria. Não quebre testes do motor nem do servidor. O motor continua sem dependência de runtime. CI do GitHub bloqueado por cobrança não conta como falha se os testes locais passarem.

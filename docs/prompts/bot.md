@@ -1,11 +1,11 @@
-# Prompt — Bot
+# Bot
 
-Cole este texto inteiro no Cursor depois que o combate (03) estiver na base. O app do servidor (04) ajuda a encaixar o menu, mas o bot é offline e não depende do WebSocket (05). Se 04 já estiver na branch, habilite o botão no menu que hoje diz "em breve".
+Cole este texto inteiro no Cursor depois que o combate estiver na base. O app do servidor ajuda a encaixar o menu, mas o bot é offline e não depende da partida online. Se o servidor já estiver na branch, habilite o botão no menu que hoje diz "em breve".
 
 ```
 Implemente o bot offline do TCG Convergência. IP própria. src/ai não pode ter dependência de runtime. Não quebre testes existentes. CI bloqueado por cobrança da conta GitHub não é falha de código.
 
-Branch: cursor/bot-0328, a partir da branch que já tem o combate (e o app, se a etapa 04 estiver nessa linha). PR indicando a base.
+Branch: cursor/bot-0328, a partir da branch que já tem o combate (e o app, se o servidor estiver nessa linha). PR indicando a base.
 Commit: feat: bot offline com níveis fácil e normal.
 
 Contexto:

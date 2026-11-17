@@ -1,6 +1,6 @@
-# Prompt — Combate
+# Combate
 
-Cole este texto inteiro no Cursor, na raiz do repositório Seuamigoo/Cards, com o `main` atualizado (Prompts 1 e 2 e o app/catálogo já mergeados).
+Cole este texto inteiro no Cursor, na raiz do repositório Seuamigoo/Cards, com o `main` atualizado (núcleo do motor, cartas e ações, catálogo e app já mergeados).
 
 ```
 Implemente o combate do TCG Convergência no motor de domínio. IP própria: não use nomes nem regras de Yu-Gi-Oh. Sem UI. Sem dependência de runtime nova. Não quebre os testes existentes.

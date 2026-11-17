@@ -1,6 +1,6 @@
-# Prompt — Servidor, login, admin e catálogo
+# Servidor, login, admin e catálogo
 
-Cole este texto inteiro no Cursor depois que o combate (03) estiver em `main`. Se o PR de combate ainda não foi mergeado, crie a branch a partir da branch de combate e avise no PR.
+Cole este texto inteiro no Cursor depois que o combate estiver em `main`. Se o PR de combate ainda não foi mergeado, crie a branch a partir da branch de combate e avise no PR.
 
 ```
 Implemente o servidor do TCG Convergência e as telas mínimas de login, cadastro e admin no app. IP própria. O motor (src/domain, src/catalog, src/persistence, src/ai se já existir) continua com zero dependência de runtime. Dependências novas ficam só em server/. Não quebre npm test nem npm run typecheck da raiz.
