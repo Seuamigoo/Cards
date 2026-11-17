@@ -24,11 +24,22 @@ function toDefinition(card: CardRecord): Record<string, unknown> {
     name: card.name,
     rarity: card.rarity,
     kind: card.kind,
+    ...(card.level !== null ? { level: card.level } : {}),
     ...(card.atk !== null ? { atk: card.atk } : {}),
     ...(card.def !== null ? { def: card.def } : {}),
-    ...(card.hp !== null ? { hp: card.hp } : {}),
-    ...(card.race !== null ? { race: card.race } : {}),
-    ...(card.cardClass !== null ? { class: card.cardClass } : {}),
+    ...(card.kind === "monster" ? { tags: readList(card.tags), keywords: readList(card.keywords) } : {}),
     ...(card.imagePath !== null ? { image: { src: card.imagePath, alt: card.name } } : {}),
   };
+}
+
+function readList(value: string | null): unknown[] {
+  if (value === null) {
+    return [];
+  }
+  try {
+    const parsed: unknown = JSON.parse(value);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
 }

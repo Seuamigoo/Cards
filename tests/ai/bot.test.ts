@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import catalogFile from "../../catalog/cards.json";
 import { chooseAction } from "../../src/ai/bot";
-import { CardRegistry, buildDeck } from "../../src/catalog/index";
+import { CardRegistry, buildDeck, starterCardIds } from "../../src/catalog/index";
 import {
   applyAction,
   createInitialState,
@@ -9,10 +9,23 @@ import {
   getLegalActions,
   resolveConfig,
 } from "../../src/domain/index";
-import type { BoardState, MonsterCard, PlayerIndex } from "../../src/domain/index";
+import type { BoardState, MonsterCard, MonsterInstance, PlayerIndex } from "../../src/domain/index";
 
 function monster(id: string, atk: number): MonsterCard {
-  return { id, name: id, rarity: "comum", kind: "monster", atk, def: 100 };
+  return { id, name: id, rarity: "comum", kind: "monster", level: 4, atk, def: 100, tags: ["HUMAN", "WARRIOR"], keywords: [] };
+}
+
+function field(card: MonsterCard | null): MonsterInstance | null {
+  if (card === null) {
+    return null;
+  }
+  return {
+    card,
+    position: "attack",
+    summonedThisTurn: false,
+    changedPositionThisTurn: false,
+    attackedThisTurn: false,
+  };
 }
 
 function arena(options: {
@@ -23,9 +36,9 @@ function arena(options: {
   enemy?: Array<MonsterCard | null>;
 }): BoardState {
   const config = resolveConfig("classic", { monsterSlots: 2, playerHp: 8000 });
-  const own = options.own ?? [null, null];
-  const enemy = options.enemy ?? [null, null];
-  const player = (id: string, zone: Array<MonsterCard | null>, hand: MonsterCard[]) => ({
+  const own = (options.own ?? [null, null]).map(field);
+  const enemy = (options.enemy ?? [null, null]).map(field);
+  const player = (id: string, zone: Array<MonsterInstance | null>, hand: MonsterCard[]) => ({
     id,
     hp: 8000,
     hand,
@@ -38,7 +51,6 @@ function arena(options: {
     limbo: [],
     towerSummonedThisTurn: false,
     normalSummonedThisTurn: false,
-    attackedThisTurn: [false, false],
   });
   const active = options.active ?? 0;
   return {
@@ -102,23 +114,14 @@ describe("bot", () => {
     if (!loaded.ok) {
       return;
     }
-    const ids: string[] = [];
-    const source = loaded.registry.all().map((card) => card.id);
-    while (ids.length < 40) {
-      for (const id of source) {
-        ids.push(id);
-        if (ids.length === 40) {
-          break;
-        }
-      }
-    }
-    const built = buildDeck(loaded.registry, ids);
-    expect(built.ok).toBe(true);
-    if (!built.ok) {
+    const vanguarda = buildDeck(loaded.registry, [...starterCardIds("vanguarda-do-reino", "classic")]);
+    const marcha = buildDeck(loaded.registry, [...starterCardIds("marcha-da-necropole", "classic")]);
+    expect(vanguarda.ok && marcha.ok).toBe(true);
+    if (!vanguarda.ok || !marcha.ok) {
       return;
     }
     const config = resolveConfig("classic");
-    let state = createInitialState(config, ["lina", "kael"], [built.cards, built.cards], createSeededRng(1));
+    let state = createInitialState(config, ["lina", "kael"], [vanguarda.cards, marcha.cards], createSeededRng(1));
     const rng = createSeededRng(2);
     let steps = 0;
     while (state.winner === null && state.turn <= 40 && steps < 800) {

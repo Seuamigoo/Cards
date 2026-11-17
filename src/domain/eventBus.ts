@@ -29,15 +29,13 @@ export interface MonsterSummonedEvent {
 export interface TowerSummonedEvent {
   readonly playerIndex: PlayerIndex;
   readonly card: TowerCard;
-  readonly hp: number;
-  readonly maxHp: number;
+  readonly def: number;
 }
 
 export interface TowerDestroyedEvent {
   readonly playerIndex: PlayerIndex;
   readonly card: TowerCard;
-  readonly hp: number;
-  readonly maxHp: number;
+  readonly def: number;
 }
 
 export interface BiomePlayedEvent {

@@ -1,8 +1,8 @@
 import catalogFile from "../../catalog/cards.json";
 import { chooseAction } from "../../src/ai/bot";
 import type { BotLevel } from "../../src/ai/bot";
-import { buildDeck } from "../../src/catalog/index";
-import { GameMatch, MODE_CONFIGS, createSeededRng, getLegalActions } from "../../src/domain/index";
+import { buildDeck, starterCardIds } from "../../src/catalog/index";
+import { GameMatch, createSeededRng, getLegalActions } from "../../src/domain/index";
 import type { Action, BoardState } from "../../src/domain/index";
 import { adminCards, apiUrl, loginAccount, publishCatalog, registerAccount, saveCard, uploadCardImage } from "./api";
 import type { Session } from "./api";
@@ -150,10 +150,11 @@ function renderCard(card: Card): HTMLLIElement {
 function statLine(card: Card): string {
   switch (card.kind) {
     case "monster":
-      return `ATK ${card.atk} / DEF ${card.def}`;
+      return `Nv ${card.level} · ATK ${card.atk} / DEF ${card.def}`;
+    case "tower":
+      return `DEF ${card.def}`;
     case "spell":
     case "trap":
-    case "tower":
     case "biome":
       return "ATK — / DEF —";
     default: {
@@ -262,6 +263,7 @@ function renderAdmin(): HTMLElement {
   rarity.input.value = "comum";
   const kind = field("text", "Tipo");
   kind.input.value = "spell";
+  const level = field("number", "Nível");
   const atk = field("number", "ATK");
   const def = field("number", "DEF");
   const file = document.createElement("input");
@@ -274,12 +276,13 @@ function renderAdmin(): HTMLElement {
     name.label,
     rarity.label,
     kind.label,
+    level.label,
     atk.label,
     def.label,
     file,
     actionButton("Salvar carta", () => {
       preview.textContent = `Prévia: ${name.input.value} · ${rarity.input.value} · ATK ${atk.input.value || "—"} / DEF ${def.input.value || "—"}`;
-      void saveAdminCard(name.input.value, rarity.input.value, kind.input.value, atk.input.value, def.input.value, file.files?.[0], status, list);
+      void saveAdminCard(name.input.value, rarity.input.value, kind.input.value, level.input.value, atk.input.value, def.input.value, file.files?.[0], status, list);
     }),
     actionButton("Publicar atualização", () => {
       void publishAdmin(status);
@@ -312,6 +315,7 @@ async function saveAdminCard(
   name: string,
   rarity: string,
   kind: string,
+  level: string,
   atk: string,
   def: string,
   file: File | undefined,
@@ -326,8 +330,10 @@ async function saveAdminCard(
     rarity,
     kind,
     status: "draft",
+    ...(level.length > 0 ? { level: Number(level) } : {}),
     ...(atk.length > 0 ? { atk: Number(atk) } : {}),
     ...(def.length > 0 ? { def: Number(def) } : {}),
+    ...(kind === "monster" ? { tags: ["HUMAN", "WARRIOR"], keywords: [] } : {}),
   });
   if (id === null) {
     status.textContent = "Não foi possível salvar.";
@@ -403,23 +409,14 @@ function startBot(level: BotLevel): void {
   if (!loaded.ok) {
     return;
   }
-  const ids: string[] = [];
-  const source = loaded.registry.all().map((card) => card.id);
-  while (ids.length < MODE_CONFIGS.classic.mainDeckMin) {
-    for (const id of source) {
-      ids.push(id);
-      if (ids.length === MODE_CONFIGS.classic.mainDeckMin) {
-        break;
-      }
-    }
-  }
-  const built = buildDeck(loaded.registry, ids);
-  if (!built.ok) {
+  const human = buildDeck(loaded.registry, [...starterCardIds("vanguarda-do-reino", "classic")]);
+  const bot = buildDeck(loaded.registry, [...starterCardIds("marcha-da-necropole", "classic")]);
+  if (!human.ok || !bot.ok) {
     return;
   }
   botLevel = level;
   botMatch = new GameMatch("classic", ["voce", "bot"], undefined, {
-    decks: [built.cards, built.cards],
+    decks: [human.cards, bot.cards],
     seed: 1,
   });
   runBot();
@@ -447,7 +444,9 @@ function labelAction(state: BoardState, action: Action): string {
     case "advancePhase":
       return "Avançar fase";
     case "summonMonster":
-      return `Invocar ${state.players[0].hand[action.handIndex]?.name ?? "monstro"}`;
+      return `Invocar ${state.players[0].hand[action.handIndex]?.name ?? "monstro"} (${action.position === "attack" ? "Ataque" : "Defesa"})`;
+    case "changePosition":
+      return `Mudar posição ${action.zoneIndex + 1}`;
     case "setSpellTrap":
       return `Posicionar ${state.players[0].hand[action.handIndex]?.name ?? "carta"}`;
     case "summonTower":

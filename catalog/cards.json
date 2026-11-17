@@ -1,75 +1,550 @@
 {
   "version": 1,
-  "publishedAt": "2026-11-16T00:00:00.000Z",
+  "publishedAt": "2026-11-17T00:00:00.000Z",
   "cards": [
     {
-      "id": "sentinela-brasa",
-      "name": "Sentinela de Brasa",
-      "rarity": "comum",
-      "kind": "monster",
-      "atk": 1600,
-      "def": 1400,
-      "race": "elemento",
-      "class": "guarda",
-      "image": {
-        "src": "assets/cards/placeholder.webp",
-        "alt": "Sentinela de Brasa"
-      }
-    },
-    {
-      "id": "arauto-vertice",
-      "name": "Arauto do Vértice",
+      "id": "cidadela-do-rei",
+      "name": "Cidadela do Rei",
       "rarity": "rara",
-      "kind": "monster",
-      "atk": 2100,
-      "def": 800,
-      "race": "convergente",
-      "class": "arauto",
       "image": {
         "src": "assets/cards/placeholder.webp",
-        "alt": "Arauto do Vértice"
-      }
-    },
-    {
-      "id": "pacto-confluencia",
-      "name": "Pacto de Confluência",
-      "rarity": "incomum",
-      "kind": "spell",
-      "image": {
-        "src": "assets/cards/placeholder.webp",
-        "alt": "Pacto de Confluência"
-      }
-    },
-    {
-      "id": "limiar-quebrado",
-      "name": "Limiar Quebrado",
-      "rarity": "rara",
-      "kind": "trap",
-      "image": {
-        "src": "assets/cards/placeholder.webp",
-        "alt": "Limiar Quebrado"
-      }
-    },
-    {
-      "id": "torre-aurora",
-      "name": "Torre da Aurora",
-      "rarity": "epica",
+        "alt": "Cidadela do Rei"
+      },
       "kind": "tower",
-      "hp": 4000,
-      "image": {
-        "src": "assets/cards/placeholder.webp",
-        "alt": "Torre da Aurora"
-      }
+      "def": 2200
     },
     {
-      "id": "clareira-mares",
-      "name": "Clareira das Marés",
-      "rarity": "lendaria",
-      "kind": "biome",
+      "id": "necropole-silente",
+      "name": "Necrópole Silente",
+      "rarity": "rara",
       "image": {
         "src": "assets/cards/placeholder.webp",
-        "alt": "Clareira das Marés"
-      }
+        "alt": "Necrópole Silente"
+      },
+      "kind": "tower",
+      "def": 2000
+    },
+    {
+      "id": "planicie-dourada",
+      "name": "Planície Dourada",
+      "rarity": "incomum",
+      "image": {
+        "src": "assets/cards/placeholder.webp",
+        "alt": "Planície Dourada"
+      },
+      "kind": "biome"
+    },
+    {
+      "id": "pantano-das-lapides",
+      "name": "Pântano das Lápides",
+      "rarity": "incomum",
+      "image": {
+        "src": "assets/cards/placeholder.webp",
+        "alt": "Pântano das Lápides"
+      },
+      "kind": "biome"
+    },
+    {
+      "id": "recruta-da-muralha",
+      "name": "Recruta da Muralha",
+      "rarity": "comum",
+      "image": {
+        "src": "assets/cards/placeholder.webp",
+        "alt": "Recruta da Muralha"
+      },
+      "kind": "monster",
+      "level": 2,
+      "tags": [
+        "HUMAN",
+        "WARRIOR"
+      ],
+      "atk": 1000,
+      "def": 1200,
+      "keywords": []
+    },
+    {
+      "id": "arqueira-da-torre-norte",
+      "name": "Arqueira da Torre Norte",
+      "rarity": "comum",
+      "image": {
+        "src": "assets/cards/placeholder.webp",
+        "alt": "Arqueira da Torre Norte"
+      },
+      "kind": "monster",
+      "level": 3,
+      "tags": [
+        "HUMAN",
+        "ARCHER"
+      ],
+      "atk": 1200,
+      "def": 800,
+      "keywords": []
+    },
+    {
+      "id": "escudeiro-juramentado",
+      "name": "Escudeiro Juramentado",
+      "rarity": "comum",
+      "image": {
+        "src": "assets/cards/placeholder.webp",
+        "alt": "Escudeiro Juramentado"
+      },
+      "kind": "monster",
+      "level": 3,
+      "tags": [
+        "HUMAN",
+        "WARRIOR"
+      ],
+      "atk": 800,
+      "def": 1600,
+      "keywords": [
+        "provocar"
+      ]
+    },
+    {
+      "id": "lamina-sem-brasao",
+      "name": "Lâmina Sem Brasão",
+      "rarity": "incomum",
+      "image": {
+        "src": "assets/cards/placeholder.webp",
+        "alt": "Lâmina Sem Brasão"
+      },
+      "kind": "monster",
+      "level": 3,
+      "tags": [
+        "HUMAN",
+        "ASSASSIN"
+      ],
+      "atk": 1300,
+      "def": 600,
+      "keywords": [
+        "impeto"
+      ]
+    },
+    {
+      "id": "cleriga-da-aurora",
+      "name": "Clériga da Aurora",
+      "rarity": "incomum",
+      "image": {
+        "src": "assets/cards/placeholder.webp",
+        "alt": "Clériga da Aurora"
+      },
+      "kind": "monster",
+      "level": 4,
+      "tags": [
+        "HUMAN",
+        "CLERIC"
+      ],
+      "atk": 1000,
+      "def": 1400,
+      "keywords": []
+    },
+    {
+      "id": "mago-da-corte",
+      "name": "Mago da Corte",
+      "rarity": "incomum",
+      "image": {
+        "src": "assets/cards/placeholder.webp",
+        "alt": "Mago da Corte"
+      },
+      "kind": "monster",
+      "level": 4,
+      "tags": [
+        "HUMAN",
+        "MAGE"
+      ],
+      "atk": 1400,
+      "def": 1000,
+      "keywords": []
+    },
+    {
+      "id": "capita-lyra-valmont",
+      "name": "Capitã Lyra Valmont",
+      "rarity": "rara",
+      "image": {
+        "src": "assets/cards/placeholder.webp",
+        "alt": "Capitã Lyra Valmont"
+      },
+      "kind": "monster",
+      "level": 4,
+      "tags": [
+        "HUMAN",
+        "WARRIOR"
+      ],
+      "atk": 1700,
+      "def": 1000,
+      "keywords": []
+    },
+    {
+      "id": "paladino-do-estandarte",
+      "name": "Paladino do Estandarte",
+      "rarity": "epica",
+      "image": {
+        "src": "assets/cards/placeholder.webp",
+        "alt": "Paladino do Estandarte"
+      },
+      "kind": "monster",
+      "level": 6,
+      "tags": [
+        "HUMAN",
+        "WARRIOR"
+      ],
+      "atk": 2300,
+      "def": 2000,
+      "keywords": []
+    },
+    {
+      "id": "rei-aldren",
+      "name": "Rei Aldren, o Último Bastião",
+      "rarity": "lendaria",
+      "image": {
+        "src": "assets/cards/placeholder.webp",
+        "alt": "Rei Aldren, o Último Bastião"
+      },
+      "kind": "monster",
+      "level": 8,
+      "tags": [
+        "HUMAN",
+        "WARRIOR"
+      ],
+      "atk": 2600,
+      "def": 2600,
+      "keywords": [
+        "provocar"
+      ]
+    },
+    {
+      "id": "filhote-de-brasa",
+      "name": "Filhote de Brasa",
+      "rarity": "comum",
+      "image": {
+        "src": "assets/cards/placeholder.webp",
+        "alt": "Filhote de Brasa"
+      },
+      "kind": "monster",
+      "level": 3,
+      "tags": [
+        "DRAGON",
+        "WARRIOR"
+      ],
+      "atk": 1100,
+      "def": 900,
+      "keywords": []
+    },
+    {
+      "id": "serpe-das-cinzas",
+      "name": "Serpe das Cinzas",
+      "rarity": "rara",
+      "image": {
+        "src": "assets/cards/placeholder.webp",
+        "alt": "Serpe das Cinzas"
+      },
+      "kind": "monster",
+      "level": 5,
+      "tags": [
+        "DRAGON",
+        "MAGE"
+      ],
+      "atk": 2000,
+      "def": 1500,
+      "keywords": []
+    },
+    {
+      "id": "esqueleto-guardiao",
+      "name": "Esqueleto Guardião",
+      "rarity": "comum",
+      "image": {
+        "src": "assets/cards/placeholder.webp",
+        "alt": "Esqueleto Guardião"
+      },
+      "kind": "monster",
+      "level": 2,
+      "tags": [
+        "UNDEAD",
+        "WARRIOR"
+      ],
+      "atk": 800,
+      "def": 1400,
+      "keywords": []
+    },
+    {
+      "id": "carnical-faminto",
+      "name": "Carniçal Faminto",
+      "rarity": "comum",
+      "image": {
+        "src": "assets/cards/placeholder.webp",
+        "alt": "Carniçal Faminto"
+      },
+      "kind": "monster",
+      "level": 3,
+      "tags": [
+        "UNDEAD",
+        "ASSASSIN"
+      ],
+      "atk": 1300,
+      "def": 700,
+      "keywords": [
+        "impeto"
+      ]
+    },
+    {
+      "id": "acolita-do-ossuario",
+      "name": "Acólita do Ossuário",
+      "rarity": "incomum",
+      "image": {
+        "src": "assets/cards/placeholder.webp",
+        "alt": "Acólita do Ossuário"
+      },
+      "kind": "monster",
+      "level": 3,
+      "tags": [
+        "UNDEAD",
+        "CLERIC"
+      ],
+      "atk": 700,
+      "def": 1200,
+      "keywords": []
+    },
+    {
+      "id": "arqueiro-espectral",
+      "name": "Arqueiro Espectral",
+      "rarity": "incomum",
+      "image": {
+        "src": "assets/cards/placeholder.webp",
+        "alt": "Arqueiro Espectral"
+      },
+      "kind": "monster",
+      "level": 4,
+      "tags": [
+        "UNDEAD",
+        "ARCHER"
+      ],
+      "atk": 1500,
+      "def": 900,
+      "keywords": [
+        "ataqueTorre"
+      ]
+    },
+    {
+      "id": "necromante-velka",
+      "name": "Necromante Velka",
+      "rarity": "rara",
+      "image": {
+        "src": "assets/cards/placeholder.webp",
+        "alt": "Necromante Velka"
+      },
+      "kind": "monster",
+      "level": 4,
+      "tags": [
+        "UNDEAD",
+        "MAGE"
+      ],
+      "atk": 1400,
+      "def": 1100,
+      "keywords": []
+    },
+    {
+      "id": "cavaleiro-sem-tumulo",
+      "name": "Cavaleiro Sem Túmulo",
+      "rarity": "epica",
+      "image": {
+        "src": "assets/cards/placeholder.webp",
+        "alt": "Cavaleiro Sem Túmulo"
+      },
+      "kind": "monster",
+      "level": 6,
+      "tags": [
+        "UNDEAD",
+        "WARRIOR"
+      ],
+      "atk": 2200,
+      "def": 1800,
+      "keywords": []
+    },
+    {
+      "id": "rainha-ossuaria-morgala",
+      "name": "Rainha Ossuária Mórgala",
+      "rarity": "lendaria",
+      "image": {
+        "src": "assets/cards/placeholder.webp",
+        "alt": "Rainha Ossuária Mórgala"
+      },
+      "kind": "monster",
+      "level": 8,
+      "tags": [
+        "UNDEAD",
+        "MAGE"
+      ],
+      "atk": 2700,
+      "def": 2400,
+      "keywords": []
+    },
+    {
+      "id": "diabrete-zombeteiro",
+      "name": "Diabrete Zombeteiro",
+      "rarity": "comum",
+      "image": {
+        "src": "assets/cards/placeholder.webp",
+        "alt": "Diabrete Zombeteiro"
+      },
+      "kind": "monster",
+      "level": 2,
+      "tags": [
+        "DEMON",
+        "ASSASSIN"
+      ],
+      "atk": 900,
+      "def": 500,
+      "keywords": []
+    },
+    {
+      "id": "algoz-do-abismo",
+      "name": "Algoz do Abismo",
+      "rarity": "rara",
+      "image": {
+        "src": "assets/cards/placeholder.webp",
+        "alt": "Algoz do Abismo"
+      },
+      "kind": "monster",
+      "level": 5,
+      "tags": [
+        "DEMON",
+        "WARRIOR"
+      ],
+      "atk": 2100,
+      "def": 1300,
+      "keywords": []
+    },
+    {
+      "id": "draconato-kaelthar",
+      "name": "Draconato Kaelthar",
+      "rarity": "epica",
+      "image": {
+        "src": "assets/cards/placeholder.webp",
+        "alt": "Draconato Kaelthar"
+      },
+      "kind": "monster",
+      "level": 6,
+      "tags": [
+        "HUMAN",
+        "DRAGON",
+        "WARRIOR"
+      ],
+      "atk": 2400,
+      "def": 2000,
+      "keywords": [
+        "perfurar"
+      ]
+    },
+    {
+      "id": "ceifador-carmesim",
+      "name": "Ceifador Carmesim",
+      "rarity": "epica",
+      "image": {
+        "src": "assets/cards/placeholder.webp",
+        "alt": "Ceifador Carmesim"
+      },
+      "kind": "monster",
+      "level": 6,
+      "tags": [
+        "UNDEAD",
+        "DEMON",
+        "ASSASSIN"
+      ],
+      "atk": 2300,
+      "def": 1500,
+      "keywords": [
+        "impeto"
+      ]
+    },
+    {
+      "id": "pocao-de-campanha",
+      "name": "Poção de Campanha",
+      "rarity": "comum",
+      "image": {
+        "src": "assets/cards/placeholder.webp",
+        "alt": "Poção de Campanha"
+      },
+      "kind": "spell"
+    },
+    {
+      "id": "reforco-de-muralha",
+      "name": "Reforço de Muralha",
+      "rarity": "comum",
+      "image": {
+        "src": "assets/cards/placeholder.webp",
+        "alt": "Reforço de Muralha"
+      },
+      "kind": "spell"
+    },
+    {
+      "id": "lamina-afiada",
+      "name": "Lâmina Afiada",
+      "rarity": "comum",
+      "image": {
+        "src": "assets/cards/placeholder.webp",
+        "alt": "Lâmina Afiada"
+      },
+      "kind": "spell"
+    },
+    {
+      "id": "estratagema",
+      "name": "Estratagema",
+      "rarity": "incomum",
+      "image": {
+        "src": "assets/cards/placeholder.webp",
+        "alt": "Estratagema"
+      },
+      "kind": "spell"
+    },
+    {
+      "id": "ariete-de-cerco",
+      "name": "Aríete de Cerco",
+      "rarity": "incomum",
+      "image": {
+        "src": "assets/cards/placeholder.webp",
+        "alt": "Aríete de Cerco"
+      },
+      "kind": "spell"
+    },
+    {
+      "id": "chamado-do-limbo",
+      "name": "Chamado do Limbo",
+      "rarity": "rara",
+      "image": {
+        "src": "assets/cards/placeholder.webp",
+        "alt": "Chamado do Limbo"
+      },
+      "kind": "spell"
+    },
+    {
+      "id": "muralha-de-escudos",
+      "name": "Muralha de Escudos",
+      "rarity": "comum",
+      "image": {
+        "src": "assets/cards/placeholder.webp",
+        "alt": "Muralha de Escudos"
+      },
+      "kind": "trap"
+    },
+    {
+      "id": "fosso-de-estacas",
+      "name": "Fosso de Estacas",
+      "rarity": "incomum",
+      "image": {
+        "src": "assets/cards/placeholder.webp",
+        "alt": "Fosso de Estacas"
+      },
+      "kind": "trap"
+    },
+    {
+      "id": "contra-ataque",
+      "name": "Contra-Ataque",
+      "rarity": "rara",
+      "image": {
+        "src": "assets/cards/placeholder.webp",
+        "alt": "Contra-Ataque"
+      },
+      "kind": "trap"
     }
   ]
 }

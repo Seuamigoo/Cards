@@ -17,7 +17,7 @@ import {
 const identityRng: Rng = { next: () => 0.999 };
 
 function monster(id: string): MonsterCard {
-  return { id, name: id, rarity: "comum", kind: "monster", atk: 100, def: 100 };
+  return { id, name: id, rarity: "comum", kind: "monster", level: 4, atk: 100, def: 100, tags: ["HUMAN", "WARRIOR"], keywords: [] };
 }
 
 function deckIds(size: number, prefix: string): string[] {
@@ -32,7 +32,7 @@ describe("partida", () => {
       rng: identityRng,
     });
     match.advancePhase();
-    expect(match.dispatch({ type: "summonMonster", handIndex: 1, zoneIndex: 0 }).ok).toBe(true);
+    expect(match.dispatch({ type: "summonMonster", handIndex: 1, zoneIndex: 0, position: "attack", tributeZoneIndexes: [] }).ok).toBe(true);
     const saved = match.getState();
 
     const adapter = new MemoryStorageAdapter();
@@ -47,9 +47,9 @@ describe("partida", () => {
     const resumed = GameMatch.fromState(loaded.value);
     expect(resumed.getState()).toEqual(saved);
     expect(resumed.getState()).not.toBe(saved);
-    expect(resumed.getState().players[0].monsterZone[0]?.id).toBe("m1");
+    expect(resumed.getState().players[0].monsterZone[0]?.card.id).toBe("m1");
     expect(resumed.dispatch({ type: "advancePhase" }).ok).toBe(true);
-    expect(resumed.getState().phase).toBe("battle");
+    expect(resumed.getState().phase).toBe("main2");
     expect(match.getState()).toEqual(saved);
     expect(match.getState().phase).toBe("main1");
   });

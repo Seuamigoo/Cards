@@ -88,7 +88,7 @@ describe("servidor", () => {
       method: "POST",
       url: "/admin/cards",
       headers,
-      payload: { name: "Sentinela de Bruma", rarity: "comum", kind: "monster", atk: 1000, def: 1000 },
+      payload: { name: "Sentinela de Bruma", rarity: "comum", kind: "monster", level: 4, atk: 1000, def: 1000, tags: ["HUMAN", "WARRIOR"] },
     });
     expect(created.statusCode).toBe(201);
     const id = (created.json() as { id: string }).id;

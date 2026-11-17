@@ -17,12 +17,8 @@ export interface GameConfig {
   readonly lineageDeckMax: number;
   readonly towerZones: number;
   readonly biomeZones: number;
-  /** PROVISÓRIO (até GDD v0.2) */
   readonly openingHandSize: number;
-  /** PROVISÓRIO (até GDD v0.2) */
   readonly handLimit: number;
-  /** PROVISÓRIO (até GDD v0.2) */
-  readonly defaultTowerHp: number;
   /** PROVISÓRIO (até GDD v0.2) */
   readonly winCondition: WinCondition;
 }
@@ -39,7 +35,6 @@ const CLASSIC_CONFIG: GameConfig = {
   biomeZones: 1,
   openingHandSize: 5,
   handLimit: 7,
-  defaultTowerHp: 4000,
   winCondition: "player_hp",
 };
 
@@ -55,7 +50,6 @@ const BLITZ_CONFIG: GameConfig = {
   biomeZones: 1,
   openingHandSize: 4,
   handLimit: 6,
-  defaultTowerHp: 2000,
   winCondition: "player_hp",
 };
 
@@ -92,7 +86,6 @@ function copyConfig(
     biomeZones: overrides?.biomeZones ?? base.biomeZones,
     openingHandSize: overrides?.openingHandSize ?? base.openingHandSize,
     handLimit: overrides?.handLimit ?? base.handLimit,
-    defaultTowerHp: overrides?.defaultTowerHp ?? base.defaultTowerHp,
     winCondition: overrides?.winCondition ?? base.winCondition,
   };
 }
@@ -108,7 +101,6 @@ function assertValidConfig(config: GameConfig): void {
   assertPositiveInteger("biomeZones", config.biomeZones);
   assertPositiveInteger("openingHandSize", config.openingHandSize);
   assertPositiveInteger("handLimit", config.handLimit);
-  assertPositiveInteger("defaultTowerHp", config.defaultTowerHp);
 
   if (config.mainDeckMin > config.mainDeckMax) {
     throw new Error(

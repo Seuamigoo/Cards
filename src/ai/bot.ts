@@ -95,7 +95,7 @@ function strongestSummon(
       continue;
     }
     const card = state.players[playerIndex].hand[action.handIndex];
-    if (card?.kind === "monster" && card.atk > bestAtk) {
+    if (card?.kind === "monster" && action.position === "attack" && card.atk > bestAtk) {
       best = action;
       bestAtk = card.atk;
     }
@@ -117,16 +117,18 @@ function bestAttack(state: BoardState, playerIndex: PlayerIndex, legal: readonly
     if (attacker === null || attacker === undefined) {
       continue;
     }
+    const atk = attacker.card.atk;
     switch (action.target.kind) {
       case "monster": {
         const defender = state.players[opponent].monsterZone[action.target.zoneIndex];
         if (defender === null || defender === undefined) {
           break;
         }
-        if (attacker.atk > defender.atk && attacker.atk - defender.atk > winningGap) {
+        const defense = defender.position === "defense" ? defender.card.def : defender.card.atk;
+        if (atk > defense && atk - defense > winningGap) {
           winning = action;
-          winningGap = attacker.atk - defender.atk;
-        } else if (attacker.atk >= defender.atk && safe === null) {
+          winningGap = atk - defense;
+        } else if (atk >= defense && safe === null) {
           safe = action;
         }
         break;

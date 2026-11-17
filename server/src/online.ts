@@ -251,6 +251,7 @@ function isAction(value: unknown): value is Action {
     case "setSpellTrap":
     case "summonTower":
     case "playBiome":
+    case "changePosition":
     case "attack":
       return true;
     default:

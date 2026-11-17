@@ -35,6 +35,9 @@ model CardRecord {
   atk       Int?
   def       Int?
   hp        Int?
+  level     Int?
+  tags      String?
+  keywords  String?
   race      String?
   cardClass String?  @map("class")
   imagePath String?

@@ -23,7 +23,7 @@ import type {
 const identityRng: Rng = { next: () => 0.999 };
 
 function monster(id: string, atk = 1000, def = 800): MonsterCard {
-  return { id, name: id, rarity: "comum", kind: "monster", atk, def };
+  return { id, name: id, rarity: "comum", kind: "monster", level: 4, atk, def, tags: ["HUMAN", "WARRIOR"], keywords: [] };
 }
 
 function spell(id: string): SpellCard {
@@ -34,14 +34,8 @@ function trap(id: string): TrapCard {
   return { id, name: id, rarity: "rara", kind: "trap" };
 }
 
-function tower(id: string, hp?: number): TowerCard {
-  return {
-    id,
-    name: id,
-    rarity: "epica",
-    kind: "tower",
-    ...(hp !== undefined ? { hp } : {}),
-  };
+function tower(id: string, def = 1500): TowerCard {
+  return { id, name: id, rarity: "epica", kind: "tower", def };
 }
 
 function biome(id: string): BiomeCard {
@@ -94,7 +88,7 @@ describe("compra e derrota", () => {
       expect(match.getState().players[payload.playerIndex].hand.at(-1)?.id).toBe(payload.card.id);
     });
 
-    for (let step = 0; step < 4; step += 1) {
+    for (let step = 0; step < 3; step += 1) {
       match.advancePhase();
     }
     expect(drawn).toEqual([]);
@@ -204,16 +198,16 @@ describe("ações", () => {
     expect(wrongPlayer.ok).toBe(false);
     expect(initial.players[0].hand).toBe(match.getState().players[0].hand);
 
-    const early = applyAction(initial, 0, { type: "summonMonster", handIndex: 5, zoneIndex: 0 });
+    const early = applyAction(initial, 0, { type: "summonMonster", handIndex: 5, zoneIndex: 0, position: "attack", tributeZoneIndexes: [] });
     expect(early).toEqual({
       ok: false,
       error: "Invocações e posicionamentos só são permitidos em main1 ou main2.",
     });
 
     toMain(match);
-    const summoned = match.dispatch({ type: "summonMonster", handIndex: 5, zoneIndex: 0 });
+    const summoned = match.dispatch({ type: "summonMonster", handIndex: 5, zoneIndex: 0, position: "attack", tributeZoneIndexes: [] });
     expect(summoned.ok).toBe(true);
-    const second = match.dispatch({ type: "summonMonster", handIndex: 4, zoneIndex: 1 });
+    const second = match.dispatch({ type: "summonMonster", handIndex: 4, zoneIndex: 1, position: "attack", tributeZoneIndexes: [] });
     expect(second).toEqual({ ok: false, error: "Só é permitida uma invocação normal por turno." });
     expect(match.getState().players[0].monsterZone[1]).toBeNull();
 
@@ -225,8 +219,8 @@ describe("ações", () => {
       { openingHandSize: 2, monsterSlots: 1 },
     );
     toMain(crowded);
-    expect(crowded.dispatch({ type: "summonMonster", handIndex: 1, zoneIndex: 0 }).ok).toBe(true);
-    expect(crowded.dispatch({ type: "summonMonster", handIndex: 0, zoneIndex: 0 })).toEqual({
+    expect(crowded.dispatch({ type: "summonMonster", handIndex: 1, zoneIndex: 0, position: "attack", tributeZoneIndexes: [] }).ok).toBe(true);
+    expect(crowded.dispatch({ type: "summonMonster", handIndex: 0, zoneIndex: 0, position: "attack", tributeZoneIndexes: [] })).toEqual({
       ok: false,
       error: "A zona de monstro está ocupada.",
     });
@@ -234,7 +228,7 @@ describe("ações", () => {
 
   it("seta magia e armadilha, joga bioma substituindo o anterior e respeita o hp da Torre", () => {
     const mine = [spell("s1"), trap("t1"), biome("b1"), biome("b2"), tower("plain"), tower("fixed", 2200)];
-    const match = matchWith([mine, mine], { openingHandSize: 6, defaultTowerHp: 1500 });
+    const match = matchWith([mine, mine], { openingHandSize: 6 });
     toMain(match);
     expect(match.getState().players[0].hand.map((card) => card.id)).toEqual([
       "fixed",
@@ -262,43 +256,41 @@ describe("ações", () => {
     expect(match.dispatch({ type: "playBiome", handIndex: 3 }).ok).toBe(true);
     expect(match.dispatch({ type: "playBiome", handIndex: 2 }).ok).toBe(true);
     expect(match.getState().players[0].biomeZone?.id).toBe("b2");
-    expect(match.getState().players[0].graveyard.map((card) => card.id)).toEqual(["b1"]);
+    expect(match.getState().players[0].limbo.map((card) => card.id)).toEqual(["b1"]);
     expect(biomes).toEqual(["b1:nenhum", "b2:b1"]);
 
     const towers: number[] = [];
     match.events.on("tower:summoned", (payload) => {
-      towers.push(payload.hp);
+      towers.push(payload.def);
     });
     expect(match.dispatch({ type: "summonTower", handIndex: 1 }).ok).toBe(true);
-    expect(match.getState().players[0].towerZone).toMatchObject({ hp: 1500, maxHp: 1500 });
+    expect(match.getState().players[0].towerZone).toMatchObject({ defBonus: 0, card: { def: 1500 } });
     expect(towers).toEqual([1500]);
   });
 
   it("manda a Torre destruída ao limbo e permite invocar outra", () => {
     const mine = [tower("first", 1800), tower("second")];
-    const match = matchWith([mine, mine], { openingHandSize: 2, defaultTowerHp: 1500 });
+    const match = matchWith([mine, mine], { openingHandSize: 2 });
     toMain(match);
     expect(match.dispatch({ type: "summonTower", handIndex: 1 }).ok).toBe(true);
     expect(match.dispatch({ type: "summonTower", handIndex: 0 })).toEqual({
       ok: false,
-      error: "A zona de Torre está ocupada.",
+      error: "Só é permitida uma Torre por turno.",
     });
 
     const destroyed = match.destroyTower(0);
     expect(destroyed.ok).toBe(true);
     expect(match.getState().players[0].towerZone).toBeNull();
     expect(match.getState().players[0].limbo.map((card) => card.id)).toEqual(["first"]);
-    expect(match.getState().players[0].towerSummonedThisTurn).toBe(false);
-    expect(match.dispatch({ type: "summonTower", handIndex: 0 }).ok).toBe(true);
-    expect(match.getState().players[0].towerZone?.card.id).toBe("second");
-    expect(match.getState().players[0].towerZone?.hp).toBe(1500);
+    expect(match.getState().players[0].towerSummonedThisTurn).toBe(true);
+    expect(match.dispatch({ type: "summonTower", handIndex: 0 }).ok).toBe(false);
   });
 
   it("descarta até o limite e zera as flags no fim do turno", () => {
     const cards = [monster("m1"), monster("m2"), monster("m3"), monster("m4")];
     const match = matchWith([cards, cards], { openingHandSize: 4, handLimit: 2 });
     toMain(match);
-    expect(match.dispatch({ type: "summonMonster", handIndex: 3, zoneIndex: 0 }).ok).toBe(true);
+    expect(match.dispatch({ type: "summonMonster", handIndex: 3, zoneIndex: 0, position: "attack", tributeZoneIndexes: [] }).ok).toBe(true);
     expect(match.getState().players[0].normalSummonedThisTurn).toBe(true);
 
     match.advancePhase();
@@ -309,7 +301,7 @@ describe("ações", () => {
     const player = match.getState().players[0];
     expect(match.getState().turn).toBe(2);
     expect(player.hand.map((card) => card.id)).toEqual(["m4", "m3"]);
-    expect(player.graveyard.map((card) => card.id)).toEqual(["m2"]);
+    expect(player.limbo.map((card) => card.id)).toEqual(["m2"]);
     expect(player.normalSummonedThisTurn).toBe(false);
     expect(player.towerSummonedThisTurn).toBe(false);
   });
@@ -330,7 +322,7 @@ describe("ações", () => {
       expect(result.ok, JSON.stringify(action)).toBe(true);
     }
 
-    const illegal: Action = { type: "summonMonster", handIndex: 0, zoneIndex: 0 };
+    const illegal: Action = { type: "summonMonster", handIndex: 0, zoneIndex: 0, position: "attack", tributeZoneIndexes: [] };
     const rejected = applyAction(state, 0, illegal);
     expect(rejected.ok).toBe(false);
     expect(state.players[0].hand).toBe(hand);
@@ -345,7 +337,7 @@ describe("ações", () => {
     match.events.on("monster:summoned", () => {
       events.push("monster:summoned");
     });
-    const result = match.dispatch({ type: "summonMonster", handIndex: 0, zoneIndex: 0 });
+    const result = match.dispatch({ type: "summonMonster", handIndex: 0, zoneIndex: 0, position: "attack", tributeZoneIndexes: [] });
     expect(result.ok).toBe(false);
     expect(events).toEqual([]);
     expect(match.getState()).toBe(before);
@@ -355,9 +347,9 @@ describe("ações", () => {
     const match = opened();
     toMain(match);
     match.events.on("monster:summoned", (payload) => {
-      expect(match.getState().players[0].monsterZone[payload.zoneIndex]?.id).toBe(payload.card.id);
+      expect(match.getState().players[0].monsterZone[payload.zoneIndex]?.card.id).toBe(payload.card.id);
     });
-    const result = match.dispatch({ type: "summonMonster", handIndex: 5, zoneIndex: 2 });
+    const result = match.dispatch({ type: "summonMonster", handIndex: 5, zoneIndex: 2, position: "attack", tributeZoneIndexes: [] });
     expect(result.ok).toBe(true);
     if (result.ok) {
       expect(result.state).toBe(match.getState());
