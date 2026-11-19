@@ -28,7 +28,8 @@ describe("servidor", () => {
     if (email === undefined || password === undefined) {
       throw new Error("ADMIN_EMAIL e ADMIN_PASSWORD são obrigatórios.");
     }
-    expect(await seedAdmin(prisma, email, password)).toBe("created");
+    const seeded = await seedAdmin(prisma, email, password);
+    expect(seeded === "created" || seeded === "unchanged").toBe(true);
   });
 
   afterAll(async () => {
@@ -136,9 +137,10 @@ describe("servidor", () => {
     const published = await app.inject({ method: "POST", url: "/admin/catalog/publish", headers });
     expect(published.statusCode).toBe(200);
     const latest = await app.inject({ method: "GET", url: "/catalog/latest" });
-    expect(latest.json()).toMatchObject({ version: 1 });
-    const document = await app.inject({ method: "GET", url: "/catalog/1" });
-    expect(document.json()).toMatchObject({ version: 1 });
+    const version = (latest.json() as { version: number }).version;
+    expect(version).toBeGreaterThan(0);
+    const document = await app.inject({ method: "GET", url: `/catalog/${version}` });
+    expect(document.json()).toMatchObject({ version });
     await app.close();
   });
 

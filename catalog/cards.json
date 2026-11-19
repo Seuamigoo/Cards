@@ -6,545 +6,785 @@
       "id": "cidadela-do-rei",
       "name": "Cidadela do Rei",
       "rarity": "rara",
-      "image": {
-        "src": "assets/cards/placeholder.webp",
-        "alt": "Cidadela do Rei"
-      },
       "kind": "tower",
-      "def": 2200
+      "def": 2200,
+      "effects": [
+        {
+          "text": "Humanos que você controla ganham +200 ATK/DEF por cada Humano no seu campo (máx. +800).",
+          "implemented": false
+        }
+      ],
+      "image": {
+        "src": "assets/cards/cidadela-do-rei.svg",
+        "alt": "Cidadela do Rei"
+      }
     },
     {
       "id": "necropole-silente",
       "name": "Necrópole Silente",
       "rarity": "rara",
-      "image": {
-        "src": "assets/cards/placeholder.webp",
-        "alt": "Necrópole Silente"
-      },
       "kind": "tower",
-      "def": 2000
+      "def": 2000,
+      "effects": [
+        {
+          "text": "1x por turno, na sua Main: invoque do seu Limbo 1 Morto-Vivo Nível 2 ou menor em Defesa. Ele não pode atacar neste turno.",
+          "implemented": false
+        }
+      ],
+      "image": {
+        "src": "assets/cards/necropole-silente.svg",
+        "alt": "Necrópole Silente"
+      }
     },
     {
       "id": "planicie-dourada",
       "name": "Planície Dourada",
       "rarity": "incomum",
+      "kind": "biome",
+      "effects": [
+        {
+          "text": "Todos os Humanos ganham +200 DEF.",
+          "implemented": false
+        }
+      ],
       "image": {
-        "src": "assets/cards/placeholder.webp",
+        "src": "assets/cards/planicie-dourada.svg",
         "alt": "Planície Dourada"
-      },
-      "kind": "biome"
+      }
     },
     {
       "id": "pantano-das-lapides",
       "name": "Pântano das Lápides",
       "rarity": "incomum",
+      "kind": "biome",
+      "effects": [
+        {
+          "text": "Todos os Mortos-Vivos ganham +200 ATK. Todos os Anjos perdem 200 ATK.",
+          "implemented": false
+        }
+      ],
       "image": {
-        "src": "assets/cards/placeholder.webp",
+        "src": "assets/cards/pantano-das-lapides.svg",
         "alt": "Pântano das Lápides"
-      },
-      "kind": "biome"
+      }
     },
     {
       "id": "recruta-da-muralha",
       "name": "Recruta da Muralha",
       "rarity": "comum",
-      "image": {
-        "src": "assets/cards/placeholder.webp",
-        "alt": "Recruta da Muralha"
-      },
       "kind": "monster",
       "level": 2,
+      "atk": 1000,
+      "def": 1200,
       "tags": [
         "HUMAN",
         "WARRIOR"
       ],
-      "atk": 1000,
-      "def": 1200,
-      "keywords": []
+      "class": "WARRIOR",
+      "keywords": [],
+      "effects": [],
+      "image": {
+        "src": "assets/cards/recruta-da-muralha.svg",
+        "alt": "Recruta da Muralha"
+      }
     },
     {
       "id": "arqueira-da-torre-norte",
       "name": "Arqueira da Torre Norte",
       "rarity": "comum",
-      "image": {
-        "src": "assets/cards/placeholder.webp",
-        "alt": "Arqueira da Torre Norte"
-      },
       "kind": "monster",
       "level": 3,
+      "atk": 1200,
+      "def": 800,
       "tags": [
         "HUMAN",
         "ARCHER"
       ],
-      "atk": 1200,
-      "def": 800,
-      "keywords": []
+      "class": "ARCHER",
+      "keywords": [],
+      "effects": [
+        {
+          "text": "Ao ser invocada: a Torre inimiga perde 400 DEF até o fim do turno.",
+          "implemented": false
+        }
+      ],
+      "image": {
+        "src": "assets/cards/arqueira-da-torre-norte.svg",
+        "alt": "Arqueira da Torre Norte"
+      }
     },
     {
       "id": "escudeiro-juramentado",
       "name": "Escudeiro Juramentado",
       "rarity": "comum",
-      "image": {
-        "src": "assets/cards/placeholder.webp",
-        "alt": "Escudeiro Juramentado"
-      },
       "kind": "monster",
       "level": 3,
+      "atk": 800,
+      "def": 1600,
       "tags": [
         "HUMAN",
         "WARRIOR"
       ],
-      "atk": 800,
-      "def": 1600,
+      "class": "WARRIOR",
       "keywords": [
         "provocar"
-      ]
+      ],
+      "effects": [
+        {
+          "text": "Provocar.",
+          "implemented": true
+        }
+      ],
+      "image": {
+        "src": "assets/cards/escudeiro-juramentado.svg",
+        "alt": "Escudeiro Juramentado"
+      }
     },
     {
       "id": "lamina-sem-brasao",
       "name": "Lâmina Sem Brasão",
       "rarity": "incomum",
-      "image": {
-        "src": "assets/cards/placeholder.webp",
-        "alt": "Lâmina Sem Brasão"
-      },
       "kind": "monster",
       "level": 3,
+      "atk": 1300,
+      "def": 600,
       "tags": [
         "HUMAN",
         "ASSASSIN"
       ],
-      "atk": 1300,
-      "def": 600,
+      "class": "ASSASSIN",
       "keywords": [
         "impeto"
-      ]
+      ],
+      "effects": [
+        {
+          "text": "Ímpeto.",
+          "implemented": true
+        }
+      ],
+      "image": {
+        "src": "assets/cards/lamina-sem-brasao.svg",
+        "alt": "Lâmina Sem Brasão"
+      }
     },
     {
       "id": "cleriga-da-aurora",
       "name": "Clériga da Aurora",
       "rarity": "incomum",
-      "image": {
-        "src": "assets/cards/placeholder.webp",
-        "alt": "Clériga da Aurora"
-      },
       "kind": "monster",
       "level": 4,
+      "atk": 1000,
+      "def": 1400,
       "tags": [
         "HUMAN",
         "CLERIC"
       ],
-      "atk": 1000,
-      "def": 1400,
-      "keywords": []
+      "class": "CLERIC",
+      "keywords": [],
+      "effects": [
+        {
+          "text": "1x por turno, na sua Main: você recupera 500 HP.",
+          "implemented": false
+        }
+      ],
+      "image": {
+        "src": "assets/cards/cleriga-da-aurora.svg",
+        "alt": "Clériga da Aurora"
+      }
     },
     {
       "id": "mago-da-corte",
       "name": "Mago da Corte",
       "rarity": "incomum",
-      "image": {
-        "src": "assets/cards/placeholder.webp",
-        "alt": "Mago da Corte"
-      },
       "kind": "monster",
       "level": 4,
+      "atk": 1400,
+      "def": 1000,
       "tags": [
         "HUMAN",
         "MAGE"
       ],
-      "atk": 1400,
-      "def": 1000,
-      "keywords": []
+      "class": "MAGE",
+      "keywords": [],
+      "effects": [
+        {
+          "text": "Ao ser invocado: se você controla uma Torre, compre 1 carta.",
+          "implemented": false
+        }
+      ],
+      "image": {
+        "src": "assets/cards/mago-da-corte.svg",
+        "alt": "Mago da Corte"
+      }
     },
     {
       "id": "capita-lyra-valmont",
       "name": "Capitã Lyra Valmont",
       "rarity": "rara",
-      "image": {
-        "src": "assets/cards/placeholder.webp",
-        "alt": "Capitã Lyra Valmont"
-      },
       "kind": "monster",
       "level": 4,
+      "atk": 1700,
+      "def": 1000,
       "tags": [
         "HUMAN",
         "WARRIOR"
       ],
-      "atk": 1700,
-      "def": 1000,
-      "keywords": []
+      "class": "WARRIOR",
+      "keywords": [],
+      "effects": [
+        {
+          "text": "Os outros Humanos que você controla ganham +100 ATK.",
+          "implemented": false
+        }
+      ],
+      "image": {
+        "src": "assets/cards/capita-lyra-valmont.svg",
+        "alt": "Capitã Lyra Valmont"
+      }
     },
     {
       "id": "paladino-do-estandarte",
       "name": "Paladino do Estandarte",
       "rarity": "epica",
-      "image": {
-        "src": "assets/cards/placeholder.webp",
-        "alt": "Paladino do Estandarte"
-      },
       "kind": "monster",
       "level": 6,
+      "atk": 2300,
+      "def": 2000,
       "tags": [
         "HUMAN",
         "WARRIOR"
       ],
-      "atk": 2300,
-      "def": 2000,
-      "keywords": []
+      "class": "WARRIOR",
+      "keywords": [],
+      "effects": [
+        {
+          "text": "Enquanto estiver em campo, sua Torre ganha +500 DEF.",
+          "implemented": false
+        }
+      ],
+      "image": {
+        "src": "assets/cards/paladino-do-estandarte.svg",
+        "alt": "Paladino do Estandarte"
+      }
     },
     {
       "id": "rei-aldren",
       "name": "Rei Aldren, o Último Bastião",
       "rarity": "lendaria",
-      "image": {
-        "src": "assets/cards/placeholder.webp",
-        "alt": "Rei Aldren, o Último Bastião"
-      },
       "kind": "monster",
       "level": 8,
+      "atk": 2600,
+      "def": 2600,
       "tags": [
         "HUMAN",
         "WARRIOR"
       ],
-      "atk": 2600,
-      "def": 2600,
+      "class": "WARRIOR",
       "keywords": [
         "provocar"
-      ]
+      ],
+      "effects": [
+        {
+          "text": "Ganha +200 ATK por cada outro Humano que você controla.",
+          "implemented": false
+        },
+        {
+          "text": "Provocar.",
+          "implemented": true
+        }
+      ],
+      "image": {
+        "src": "assets/cards/rei-aldren.svg",
+        "alt": "Rei Aldren, o Último Bastião"
+      }
     },
     {
       "id": "filhote-de-brasa",
       "name": "Filhote de Brasa",
       "rarity": "comum",
-      "image": {
-        "src": "assets/cards/placeholder.webp",
-        "alt": "Filhote de Brasa"
-      },
       "kind": "monster",
       "level": 3,
+      "atk": 1100,
+      "def": 900,
       "tags": [
         "DRAGON",
         "WARRIOR"
       ],
-      "atk": 1100,
-      "def": 900,
-      "keywords": []
+      "class": "WARRIOR",
+      "keywords": [],
+      "effects": [
+        {
+          "text": "Quando é destruído em batalha: o jogador oponente perde 300 HP.",
+          "implemented": false
+        }
+      ],
+      "image": {
+        "src": "assets/cards/filhote-de-brasa.svg",
+        "alt": "Filhote de Brasa"
+      }
     },
     {
       "id": "serpe-das-cinzas",
       "name": "Serpe das Cinzas",
       "rarity": "rara",
-      "image": {
-        "src": "assets/cards/placeholder.webp",
-        "alt": "Serpe das Cinzas"
-      },
       "kind": "monster",
       "level": 5,
+      "atk": 2000,
+      "def": 1500,
       "tags": [
         "DRAGON",
         "MAGE"
       ],
-      "atk": 2000,
-      "def": 1500,
-      "keywords": []
+      "class": "MAGE",
+      "keywords": [],
+      "effects": [
+        {
+          "text": "Ao ser invocada: 1 monstro inimigo perde 500 ATK até o fim do turno.",
+          "implemented": false
+        }
+      ],
+      "image": {
+        "src": "assets/cards/serpe-das-cinzas.svg",
+        "alt": "Serpe das Cinzas"
+      }
     },
     {
       "id": "esqueleto-guardiao",
       "name": "Esqueleto Guardião",
       "rarity": "comum",
-      "image": {
-        "src": "assets/cards/placeholder.webp",
-        "alt": "Esqueleto Guardião"
-      },
       "kind": "monster",
       "level": 2,
+      "atk": 800,
+      "def": 1400,
       "tags": [
         "UNDEAD",
         "WARRIOR"
       ],
-      "atk": 800,
-      "def": 1400,
-      "keywords": []
+      "class": "WARRIOR",
+      "keywords": [],
+      "effects": [],
+      "image": {
+        "src": "assets/cards/esqueleto-guardiao.svg",
+        "alt": "Esqueleto Guardião"
+      }
     },
     {
       "id": "carnical-faminto",
       "name": "Carniçal Faminto",
       "rarity": "comum",
-      "image": {
-        "src": "assets/cards/placeholder.webp",
-        "alt": "Carniçal Faminto"
-      },
       "kind": "monster",
       "level": 3,
+      "atk": 1300,
+      "def": 700,
       "tags": [
         "UNDEAD",
         "ASSASSIN"
       ],
-      "atk": 1300,
-      "def": 700,
+      "class": "ASSASSIN",
       "keywords": [
         "impeto"
-      ]
+      ],
+      "effects": [
+        {
+          "text": "Ímpeto.",
+          "implemented": true
+        }
+      ],
+      "image": {
+        "src": "assets/cards/carnical-faminto.svg",
+        "alt": "Carniçal Faminto"
+      }
     },
     {
       "id": "acolita-do-ossuario",
       "name": "Acólita do Ossuário",
       "rarity": "incomum",
-      "image": {
-        "src": "assets/cards/placeholder.webp",
-        "alt": "Acólita do Ossuário"
-      },
       "kind": "monster",
       "level": 3,
+      "atk": 700,
+      "def": 1200,
       "tags": [
         "UNDEAD",
         "CLERIC"
       ],
-      "atk": 700,
-      "def": 1200,
-      "keywords": []
+      "class": "CLERIC",
+      "keywords": [],
+      "effects": [
+        {
+          "text": "1x por turno, na sua Main: mande 1 carta da mão pro Limbo e compre 1.",
+          "implemented": false
+        }
+      ],
+      "image": {
+        "src": "assets/cards/acolita-do-ossuario.svg",
+        "alt": "Acólita do Ossuário"
+      }
     },
     {
       "id": "arqueiro-espectral",
       "name": "Arqueiro Espectral",
       "rarity": "incomum",
-      "image": {
-        "src": "assets/cards/placeholder.webp",
-        "alt": "Arqueiro Espectral"
-      },
       "kind": "monster",
       "level": 4,
+      "atk": 1500,
+      "def": 900,
       "tags": [
         "UNDEAD",
         "ARCHER"
       ],
-      "atk": 1500,
-      "def": 900,
+      "class": "ARCHER",
       "keywords": [
         "ataqueTorre"
-      ]
+      ],
+      "effects": [
+        {
+          "text": "Pode atacar a Torre inimiga mesmo havendo monstros inimigos.",
+          "implemented": true
+        }
+      ],
+      "image": {
+        "src": "assets/cards/arqueiro-espectral.svg",
+        "alt": "Arqueiro Espectral"
+      }
     },
     {
       "id": "necromante-velka",
       "name": "Necromante Velka",
       "rarity": "rara",
-      "image": {
-        "src": "assets/cards/placeholder.webp",
-        "alt": "Necromante Velka"
-      },
       "kind": "monster",
       "level": 4,
+      "atk": 1400,
+      "def": 1100,
       "tags": [
         "UNDEAD",
         "MAGE"
       ],
-      "atk": 1400,
-      "def": 1100,
-      "keywords": []
+      "class": "MAGE",
+      "keywords": [],
+      "effects": [
+        {
+          "text": "1x por turno, na sua Main: invoque do seu Limbo 1 Morto-Vivo Nível 2 ou menor em Defesa.",
+          "implemented": false
+        }
+      ],
+      "image": {
+        "src": "assets/cards/necromante-velka.svg",
+        "alt": "Necromante Velka"
+      }
     },
     {
       "id": "cavaleiro-sem-tumulo",
       "name": "Cavaleiro Sem Túmulo",
       "rarity": "epica",
-      "image": {
-        "src": "assets/cards/placeholder.webp",
-        "alt": "Cavaleiro Sem Túmulo"
-      },
       "kind": "monster",
       "level": 6,
+      "atk": 2200,
+      "def": 1800,
       "tags": [
         "UNDEAD",
         "WARRIOR"
       ],
-      "atk": 2200,
-      "def": 1800,
-      "keywords": []
+      "class": "WARRIOR",
+      "keywords": [],
+      "effects": [
+        {
+          "text": "Quando vai pro Limbo: invoque do seu Limbo 1 Morto-Vivo Nível 4 ou menor.",
+          "implemented": false
+        }
+      ],
+      "image": {
+        "src": "assets/cards/cavaleiro-sem-tumulo.svg",
+        "alt": "Cavaleiro Sem Túmulo"
+      }
     },
     {
       "id": "rainha-ossuaria-morgala",
       "name": "Rainha Ossuária Mórgala",
       "rarity": "lendaria",
-      "image": {
-        "src": "assets/cards/placeholder.webp",
-        "alt": "Rainha Ossuária Mórgala"
-      },
       "kind": "monster",
       "level": 8,
+      "atk": 2700,
+      "def": 2400,
       "tags": [
         "UNDEAD",
         "MAGE"
       ],
-      "atk": 2700,
-      "def": 2400,
-      "keywords": []
+      "class": "MAGE",
+      "keywords": [],
+      "effects": [
+        {
+          "text": "Enquanto estiver em campo, os monstros inimigos perdem 400 ATK.",
+          "implemented": false
+        }
+      ],
+      "image": {
+        "src": "assets/cards/rainha-ossuaria-morgala.svg",
+        "alt": "Rainha Ossuária Mórgala"
+      }
     },
     {
       "id": "diabrete-zombeteiro",
       "name": "Diabrete Zombeteiro",
       "rarity": "comum",
-      "image": {
-        "src": "assets/cards/placeholder.webp",
-        "alt": "Diabrete Zombeteiro"
-      },
       "kind": "monster",
       "level": 2,
+      "atk": 900,
+      "def": 500,
       "tags": [
         "DEMON",
         "ASSASSIN"
       ],
-      "atk": 900,
-      "def": 500,
-      "keywords": []
+      "class": "ASSASSIN",
+      "keywords": [],
+      "effects": [
+        {
+          "text": "Ao ser invocado: o jogador oponente perde 200 HP.",
+          "implemented": false
+        }
+      ],
+      "image": {
+        "src": "assets/cards/diabrete-zombeteiro.svg",
+        "alt": "Diabrete Zombeteiro"
+      }
     },
     {
       "id": "algoz-do-abismo",
       "name": "Algoz do Abismo",
       "rarity": "rara",
-      "image": {
-        "src": "assets/cards/placeholder.webp",
-        "alt": "Algoz do Abismo"
-      },
       "kind": "monster",
       "level": 5,
-      "tags": [
-        "DEMON",
-        "WARRIOR"
-      ],
       "atk": 2100,
       "def": 1300,
-      "keywords": []
-    },
-    {
-      "id": "draconato-kaelthar",
-      "name": "Draconato Kaelthar",
-      "rarity": "epica",
-      "image": {
-        "src": "assets/cards/placeholder.webp",
-        "alt": "Draconato Kaelthar"
-      },
-      "kind": "monster",
-      "level": 6,
       "tags": [
-        "HUMAN",
-        "DRAGON",
+        "DEMON",
         "WARRIOR"
       ],
-      "atk": 2400,
-      "def": 2000,
-      "keywords": [
-        "perfurar"
-      ]
-    },
-    {
-      "id": "ceifador-carmesim",
-      "name": "Ceifador Carmesim",
-      "rarity": "epica",
-      "image": {
-        "src": "assets/cards/placeholder.webp",
-        "alt": "Ceifador Carmesim"
-      },
-      "kind": "monster",
-      "level": 6,
-      "tags": [
-        "UNDEAD",
-        "DEMON",
-        "ASSASSIN"
+      "class": "WARRIOR",
+      "keywords": [],
+      "effects": [
+        {
+          "text": "1x por turno: pague 500 HP para ganhar +500 ATK até o fim do turno.",
+          "implemented": false
+        }
       ],
-      "atk": 2300,
-      "def": 1500,
-      "keywords": [
-        "impeto"
-      ]
+      "image": {
+        "src": "assets/cards/algoz-do-abismo.svg",
+        "alt": "Algoz do Abismo"
+      }
     },
     {
       "id": "pocao-de-campanha",
       "name": "Poção de Campanha",
       "rarity": "comum",
+      "kind": "spell",
+      "effects": [
+        {
+          "text": "Você recupera 1000 HP.",
+          "implemented": false
+        }
+      ],
       "image": {
-        "src": "assets/cards/placeholder.webp",
+        "src": "assets/cards/pocao-de-campanha.svg",
         "alt": "Poção de Campanha"
-      },
-      "kind": "spell"
+      }
     },
     {
       "id": "reforco-de-muralha",
       "name": "Reforço de Muralha",
       "rarity": "comum",
+      "kind": "spell",
+      "effects": [
+        {
+          "text": "Sua Torre ganha +800 DEF até o fim do próximo turno do oponente.",
+          "implemented": false
+        }
+      ],
       "image": {
-        "src": "assets/cards/placeholder.webp",
+        "src": "assets/cards/reforco-de-muralha.svg",
         "alt": "Reforço de Muralha"
-      },
-      "kind": "spell"
+      }
     },
     {
       "id": "lamina-afiada",
       "name": "Lâmina Afiada",
       "rarity": "comum",
+      "kind": "spell",
+      "effects": [
+        {
+          "text": "Equipamento: o monstro equipado ganha +400 ATK.",
+          "implemented": false
+        }
+      ],
       "image": {
-        "src": "assets/cards/placeholder.webp",
+        "src": "assets/cards/lamina-afiada.svg",
         "alt": "Lâmina Afiada"
-      },
-      "kind": "spell"
+      }
     },
     {
       "id": "estratagema",
       "name": "Estratagema",
       "rarity": "incomum",
+      "kind": "spell",
+      "effects": [
+        {
+          "text": "Compre 2 cartas e depois mande 1 da mão pro Limbo.",
+          "implemented": false
+        }
+      ],
       "image": {
-        "src": "assets/cards/placeholder.webp",
+        "src": "assets/cards/estratagema.svg",
         "alt": "Estratagema"
-      },
-      "kind": "spell"
+      }
     },
     {
       "id": "ariete-de-cerco",
       "name": "Aríete de Cerco",
       "rarity": "incomum",
+      "kind": "spell",
+      "effects": [
+        {
+          "text": "Equipamento: 1x por turno, o monstro equipado pode atacar a Torre inimiga mesmo havendo monstros inimigos.",
+          "implemented": false
+        }
+      ],
       "image": {
-        "src": "assets/cards/placeholder.webp",
+        "src": "assets/cards/ariete-de-cerco.svg",
         "alt": "Aríete de Cerco"
-      },
-      "kind": "spell"
+      }
     },
     {
       "id": "chamado-do-limbo",
       "name": "Chamado do Limbo",
       "rarity": "rara",
+      "kind": "spell",
+      "effects": [
+        {
+          "text": "Invoque do seu Limbo 1 monstro Nível 4 ou menor.",
+          "implemented": false
+        }
+      ],
       "image": {
-        "src": "assets/cards/placeholder.webp",
+        "src": "assets/cards/chamado-do-limbo.svg",
         "alt": "Chamado do Limbo"
-      },
-      "kind": "spell"
+      }
     },
     {
       "id": "muralha-de-escudos",
       "name": "Muralha de Escudos",
       "rarity": "comum",
+      "kind": "trap",
+      "effects": [
+        {
+          "text": "Quando um monstro inimigo declara ataque: o monstro atacado ganha +800 DEF até o fim do turno.",
+          "implemented": false
+        }
+      ],
       "image": {
-        "src": "assets/cards/placeholder.webp",
+        "src": "assets/cards/muralha-de-escudos.svg",
         "alt": "Muralha de Escudos"
-      },
-      "kind": "trap"
+      }
     },
     {
       "id": "fosso-de-estacas",
       "name": "Fosso de Estacas",
       "rarity": "incomum",
+      "kind": "trap",
+      "effects": [
+        {
+          "text": "Quando um monstro inimigo com 1500 ATK ou menos declara ataque: destrua esse monstro.",
+          "implemented": false
+        }
+      ],
       "image": {
-        "src": "assets/cards/placeholder.webp",
+        "src": "assets/cards/fosso-de-estacas.svg",
         "alt": "Fosso de Estacas"
-      },
-      "kind": "trap"
+      }
     },
     {
       "id": "contra-ataque",
       "name": "Contra-Ataque",
       "rarity": "rara",
+      "kind": "trap",
+      "effects": [
+        {
+          "text": "Quando um monstro inimigo ataca sua Torre ou você diretamente: anule o ataque e o jogador oponente perde HP igual à metade do ATK do atacante.",
+          "implemented": false
+        }
+      ],
       "image": {
-        "src": "assets/cards/placeholder.webp",
+        "src": "assets/cards/contra-ataque.svg",
         "alt": "Contra-Ataque"
-      },
-      "kind": "trap"
+      }
+    }
+  ],
+  "pending": [
+    {
+      "id": "draconato-kaelthar",
+      "name": "Draconato Kaelthar",
+      "rarity": "epica",
+      "kind": "monster",
+      "atk": 2400,
+      "def": 2000,
+      "tags": [
+        "HUMAN",
+        "DRAGON",
+        "WARRIOR"
+      ],
+      "class": "WARRIOR",
+      "keywords": [
+        "perfurar"
+      ],
+      "effects": [
+        {
+          "text": "Os Humanos que você controla ganham +200 ATK.",
+          "implemented": false
+        },
+        {
+          "text": "Perfurar.",
+          "implemented": true
+        }
+      ],
+      "todo": [
+        "Nível não consta no GDD v0.2."
+      ],
+      "image": {
+        "src": "assets/cards/draconato-kaelthar.svg",
+        "alt": "Draconato Kaelthar"
+      }
+    },
+    {
+      "id": "ceifador-carmesim",
+      "name": "Ceifador Carmesim",
+      "rarity": "epica",
+      "kind": "monster",
+      "atk": 2300,
+      "def": 1500,
+      "tags": [
+        "UNDEAD",
+        "DEMON",
+        "ASSASSIN"
+      ],
+      "class": "ASSASSIN",
+      "keywords": [
+        "impeto"
+      ],
+      "effects": [
+        {
+          "text": "Ímpeto.",
+          "implemented": true
+        },
+        {
+          "text": "Quando destrói um monstro em batalha: o jogador oponente perde 300 HP.",
+          "implemented": false
+        }
+      ],
+      "todo": [
+        "Nível não consta no GDD v0.2."
+      ],
+      "image": {
+        "src": "assets/cards/ceifador-carmesim.svg",
+        "alt": "Ceifador Carmesim"
+      }
     }
   ]
 }

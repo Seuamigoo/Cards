@@ -5,7 +5,7 @@ import { buildDeck, starterCardIds } from "../../src/catalog/index";
 import { GameMatch, createSeededRng, getLegalActions } from "../../src/domain/index";
 import type { Action, BoardState } from "../../src/domain/index";
 import { adminCards, apiUrl, loginAccount, publishCatalog, registerAccount, saveCard, uploadCardImage } from "./api";
-import type { Session } from "./api";
+import type { AdminCard, Session } from "./api";
 import { CardRegistry, CatalogCache } from "../../src/catalog/index";
 import type { CardRegistryResult } from "../../src/catalog/index";
 import type { Card } from "../../src/domain/index";
@@ -257,75 +257,138 @@ async function submitAuth(
   draw();
 }
 
+let adminCardsCache: AdminCard[] = [];
+let adminSelectionId: string | null = null;
+let adminNeedsLoad = true;
+
 function renderAdmin(): HTMLElement {
   const main = document.createElement("main");
   const title = document.createElement("h1");
   title.textContent = "Admin";
-  const preview = document.createElement("p");
-  preview.textContent = "Prévia: nenhuma carta.";
-  const name = field("text", "Nome");
-  const rarity = field("text", "Raridade");
-  rarity.input.value = "comum";
-  const kind = field("text", "Tipo");
-  kind.input.value = "spell";
-  const level = field("number", "Nível");
-  const atk = field("number", "ATK");
-  const def = field("number", "DEF");
-  const file = document.createElement("input");
-  file.type = "file";
+  const selected = adminCardsCache.find((card) => card.id === adminSelectionId) ?? null;
   const status = document.createElement("p");
   const list = document.createElement("ul");
+  for (const card of adminCardsCache) {
+    const item = document.createElement("li");
+    item.append(
+      actionButton(`${card.name} (${card.status})`, () => {
+        adminSelectionId = card.id;
+        adminNeedsLoad = false;
+        draw();
+      }),
+    );
+    list.append(item);
+  }
+  main.append(title, list, status);
+  if (selected !== null) {
+    main.append(renderAdminEditor(selected, status));
+  } else {
+    const hint = document.createElement("p");
+    hint.textContent = "Abra uma carta da lista para editar os campos ou trocar a imagem.";
+    main.append(hint);
+  }
   main.append(
-    title,
-    preview,
+    actionButton("Publicar atualização", () => {
+      void publishAdmin(status);
+    }),
+    actionButton("Voltar", () => {
+      adminNeedsLoad = true;
+      screen = "menu";
+      draw();
+    }),
+  );
+  if (adminNeedsLoad) {
+    adminNeedsLoad = false;
+    void loadAdminCards();
+  }
+  return main;
+}
+
+function renderAdminEditor(card: AdminCard, status: HTMLElement): HTMLElement {
+  const editor = document.createElement("section");
+  const identity = document.createElement("p");
+  identity.textContent = `Id ${card.id}${card.cardClass !== null ? ` · classe ${card.cardClass}` : ""}`;
+  const name = field("text", "Nome");
+  name.input.value = card.name;
+  const rarity = field("text", "Raridade");
+  rarity.input.value = card.rarity;
+  const kind = field("text", "Tipo");
+  kind.input.value = card.kind;
+  const level = field("number", "Nível");
+  level.input.value = card.level === null ? "" : String(card.level);
+  const atk = field("number", "ATK");
+  atk.input.value = card.atk === null ? "" : String(card.atk);
+  const def = field("number", "DEF");
+  def.input.value = card.def === null ? "" : String(card.def);
+  const effects = document.createElement("p");
+  effects.textContent = effectSummary(card.effects);
+  const file = document.createElement("input");
+  file.type = "file";
+  file.accept = "image/png,image/jpeg,image/webp";
+  editor.append(
+    identity,
+    effects,
     name.label,
     rarity.label,
     kind.label,
     level.label,
     atk.label,
     def.label,
+    actionButton("Salvar campos", () => {
+      void saveAdminFields(card, name.input.value, rarity.input.value, kind.input.value, level.input.value, atk.input.value, def.input.value, status);
+    }),
     file,
-    actionButton("Salvar carta", () => {
-      preview.textContent = `Prévia: ${name.input.value} · ${rarity.input.value} · ATK ${atk.input.value || "—"} / DEF ${def.input.value || "—"}`;
-      void saveAdminCard(name.input.value, rarity.input.value, kind.input.value, level.input.value, atk.input.value, def.input.value, file.files?.[0], status, list);
+    actionButton("Trocar imagem", () => {
+      void replaceAdminImage(card.id, file.files?.[0], status);
     }),
-    actionButton("Publicar atualização", () => {
-      void publishAdmin(status);
-    }),
-    actionButton("Voltar", () => {
-      screen = "menu";
-      draw();
-    }),
-    status,
-    list,
   );
-  void fillAdminList(list);
-  return main;
+  return editor;
 }
 
-async function fillAdminList(list: HTMLElement): Promise<void> {
+function effectSummary(raw: string | null): string {
+  if (raw === null || raw.length === 0) {
+    return "Sem texto de efeito.";
+  }
+  try {
+    const parsed: unknown = JSON.parse(raw);
+    if (!Array.isArray(parsed) || parsed.length === 0) {
+      return "Sem texto de efeito.";
+    }
+    return parsed
+      .map((effect) => {
+        if (typeof effect !== "object" || effect === null || !("text" in effect)) {
+          return "";
+        }
+        const text = (effect as { text?: unknown }).text;
+        const implemented = (effect as { implemented?: unknown }).implemented === true;
+        return typeof text === "string" ? `${text} (${implemented ? "no motor" : "não implementado"})` : "";
+      })
+      .filter((line) => line.length > 0)
+      .join(" ");
+  } catch {
+    return raw;
+  }
+}
+
+async function loadAdminCards(): Promise<void> {
   if (session === null) {
     return;
   }
-  const cards = await adminCards(session.accessToken);
-  list.replaceChildren();
-  for (const card of cards) {
-    const item = document.createElement("li");
-    item.textContent = `${card.name} (${card.status})`;
-    list.append(item);
+  adminCardsCache = await adminCards(session.accessToken);
+  if (screen === "admin") {
+    draw();
   }
 }
 
-async function saveAdminCard(
+async function saveAdminFields(
+  card: AdminCard,
   name: string,
   rarity: string,
   kind: string,
   level: string,
   atk: string,
   def: string,
-  file: File | undefined,
   status: HTMLElement,
-  list: HTMLElement,
 ): Promise<void> {
   if (session === null) {
     return;
@@ -334,23 +397,25 @@ async function saveAdminCard(
     name,
     rarity,
     kind,
-    status: "draft",
+    status: card.status === "published" ? "published" : "draft",
     ...(level.length > 0 ? { level: Number(level) } : {}),
     ...(atk.length > 0 ? { atk: Number(atk) } : {}),
     ...(def.length > 0 ? { def: Number(def) } : {}),
-    ...(kind === "monster" ? { tags: ["HUMAN", "WARRIOR"], keywords: [] } : {}),
-  });
-  if (id === null) {
-    status.textContent = "Não foi possível salvar.";
+  }, card.id);
+  status.textContent = id === card.id ? "Campos salvos." : "Não foi possível salvar.";
+  adminNeedsLoad = true;
+  draw();
+}
+
+async function replaceAdminImage(id: string, file: File | undefined, status: HTMLElement): Promise<void> {
+  if (session === null || file === undefined) {
+    status.textContent = "Escolha uma imagem png, jpg ou webp.";
     return;
   }
-  if (file !== undefined) {
-    const uploaded = await uploadCardImage(session.accessToken, id, file);
-    status.textContent = uploaded ? "Carta salva com imagem." : "Carta salva, imagem rejeitada.";
-  } else {
-    status.textContent = "Carta salva.";
-  }
-  await fillAdminList(list);
+  const uploaded = await uploadCardImage(session.accessToken, id, file);
+  status.textContent = uploaded ? "Imagem trocada. O id da carta permanece." : "Imagem rejeitada.";
+  adminNeedsLoad = true;
+  draw();
 }
 
 async function publishAdmin(status: HTMLElement): Promise<void> {

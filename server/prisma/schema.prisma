@@ -38,6 +38,7 @@ model CardRecord {
   level     Int?
   tags      String?
   keywords  String?
+  effects   String?
   race      String?
   cardClass String?  @map("class")
   imagePath String?

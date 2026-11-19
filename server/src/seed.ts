@@ -1,5 +1,6 @@
 import { pathToFileURL } from "node:url";
 import { PrismaClient } from "@prisma/client";
+import { seedCatalog } from "./catalogSeed";
 import { readEnv } from "./env";
 import { hashPassword } from "./passwords";
 
@@ -36,6 +37,12 @@ async function main(): Promise<void> {
   const prisma = new PrismaClient({ datasources: { db: { url: env.databaseUrl } } });
   const result = await seedAdmin(prisma, email, password);
   console.log(result === "created" ? `Admin criado para ${email}.` : "Admin já existe.");
+  const catalog = await seedCatalog(prisma);
+  console.log(
+    catalog.published
+      ? `Catálogo inicial publicado (${catalog.inserted} cartas novas).`
+      : `Catálogo mantido (${catalog.inserted} cartas novas, edições existentes preservadas).`,
+  );
   await prisma.$disconnect();
 }
 
