@@ -129,6 +129,9 @@ function parseConfig(value: unknown): BoardState["config"] | null {
     openingHandSize: value.openingHandSize,
     handLimit: value.handLimit,
   };
+  if (typeof value.enableConvergence !== "boolean") {
+    return null;
+  }
   if (Object.values(numbers).some((item) => typeof item !== "number")) {
     return null;
   }
@@ -148,6 +151,7 @@ function parseConfig(value: unknown): BoardState["config"] | null {
       openingHandSize: numbers.openingHandSize as number,
       handLimit: numbers.handLimit as number,
       winCondition: value.winCondition as WinCondition,
+      enableConvergence: value.enableConvergence === true,
     });
   } catch {
     return null;
@@ -163,7 +167,8 @@ function parsePlayer(value: unknown, config: BoardState["config"]): PlayerState 
   }
   if (
     typeof value.towerSummonedThisTurn !== "boolean" ||
-    typeof value.normalSummonedThisTurn !== "boolean"
+    typeof value.normalSummonedThisTurn !== "boolean" ||
+    typeof value.convergedThisTurn !== "boolean"
   ) {
     return null;
   }
@@ -175,6 +180,7 @@ function parsePlayer(value: unknown, config: BoardState["config"]): PlayerState 
   const spellTrapZone = parseSpellTrapZone(value.spellTrapZone, config.spellTrapSlots);
   const towerZone = parseTowerInstance(value.towerZone);
   const biomeZone = parseBiomeSlot(value.biomeZone);
+  const lineageDeck = parseLineageDeck(value.lineageDeck);
   if (
     hand === null ||
     deck === null ||
@@ -183,7 +189,8 @@ function parsePlayer(value: unknown, config: BoardState["config"]): PlayerState 
     monsterZone === null ||
     spellTrapZone === null ||
     towerZone === undefined ||
-    biomeZone === undefined
+    biomeZone === undefined ||
+    lineageDeck === null
   ) {
     return null;
   }
@@ -200,7 +207,24 @@ function parsePlayer(value: unknown, config: BoardState["config"]): PlayerState 
     limbo,
     towerSummonedThisTurn: value.towerSummonedThisTurn,
     normalSummonedThisTurn: value.normalSummonedThisTurn,
+    lineageDeck,
+    convergedThisTurn: value.convergedThisTurn,
   };
+}
+
+function parseLineageDeck(value: unknown): readonly MonsterCard[] | null {
+  if (!Array.isArray(value)) {
+    return null;
+  }
+  const cards: MonsterCard[] = [];
+  for (const entry of value) {
+    const card = parseCard(entry);
+    if (card === null || card.kind !== "monster") {
+      return null;
+    }
+    cards.push(card);
+  }
+  return cards;
 }
 
 function parseCardList(value: unknown): readonly Card[] | null {

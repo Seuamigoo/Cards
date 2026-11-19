@@ -8,10 +8,11 @@ import { createSeededRng } from "./rng";
 import type { Rng } from "./rng";
 import type { AttackTarget } from "./combatRules";
 import { cloneBoardState, createInitialState, opponentOf } from "./state";
-import type { BoardState, Card, PlayerIndex } from "./state";
+import type { BoardState, Card, MonsterCard, PlayerIndex } from "./state";
 
 export interface MatchSetup {
   readonly decks: readonly [readonly Card[], readonly Card[]];
+  readonly lineageDecks?: readonly [readonly MonsterCard[], readonly MonsterCard[]];
   readonly rng?: Rng;
   readonly seed?: number;
 }
@@ -31,7 +32,7 @@ export class GameMatch {
   ) {
     const config = resolveConfig(mode, overrides);
     this.cardRules = setup !== undefined;
-    this.state = createInitialState(config, playerIds, setup?.decks, rngFrom(setup));
+    this.state = createInitialState(config, playerIds, setup?.decks, rngFrom(setup), setup?.lineageDecks);
     if (this.state.winner !== null) {
       this.events.emit("game:over", { winner: this.state.winner, reason: "deck_out" });
     }
@@ -144,6 +145,9 @@ export class GameMatch {
         return;
       case "changePosition":
         return;
+      case "converge":
+        this.publishConvergence(before, action);
+        return;
       case "attack":
         this.publishAttack(before, after, action.attackerZoneIndex, action.target);
         return;
@@ -223,6 +227,15 @@ export class GameMatch {
       return;
     }
     this.events.emit("monster:destroyed", { playerIndex, zoneIndex, card: card.card });
+  }
+
+  private publishConvergence(before: BoardState, action: Extract<Action, { type: "converge" }>): void {
+    const playerIndex = before.activePlayerIndex;
+    const card = before.players[playerIndex].lineageDeck[action.lineageIndex];
+    if (card === undefined) {
+      return;
+    }
+    this.events.emit("monster:summoned", { playerIndex, card, zoneIndex: action.zoneIndex });
   }
 
   private publishMonster(before: BoardState, handIndex: number, zoneIndex: number): void {

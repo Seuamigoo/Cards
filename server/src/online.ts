@@ -252,6 +252,7 @@ function isAction(value: unknown): value is Action {
     case "summonTower":
     case "playBiome":
     case "changePosition":
+    case "converge":
     case "attack":
       return true;
     default:

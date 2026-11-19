@@ -52,6 +52,8 @@ function battleState(options: {
     limbo: [],
     towerSummonedThisTurn: false,
     normalSummonedThisTurn: false,
+    lineageDeck: [],
+    convergedThisTurn: false,
   };
   return {
     config,
