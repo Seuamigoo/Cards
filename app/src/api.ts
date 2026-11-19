@@ -90,8 +90,11 @@ export interface AdminCard {
   readonly kind: string;
   readonly atk: number | null;
   readonly def: number | null;
+  readonly level: number | null;
   readonly status: string;
   readonly imagePath: string | null;
+  readonly cardClass: string | null;
+  readonly effects: string | null;
 }
 
 export interface CardDraft {

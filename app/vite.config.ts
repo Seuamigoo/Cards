@@ -51,6 +51,9 @@ function serveCardAssets(): Plugin {
 }
 
 function contentType(filePath: string): string {
+  if (filePath.endsWith(".svg")) {
+    return "image/svg+xml";
+  }
   if (filePath.endsWith(".webp")) {
     return "image/webp";
   }
