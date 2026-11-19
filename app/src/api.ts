@@ -7,7 +7,7 @@ export function apiUrl(path: string): string {
 
 export interface Session {
   accessToken: string;
-  role: "player" | "admin";
+  role: "USER" | "ADMIN";
   username: string;
 }
 

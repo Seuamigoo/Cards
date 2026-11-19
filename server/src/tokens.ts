@@ -3,7 +3,7 @@ import jwt from "jsonwebtoken";
 
 export interface AccessClaims {
   readonly sub: string;
-  readonly role: "player" | "admin";
+  readonly role: "USER" | "ADMIN";
   readonly username: string;
 }
 
@@ -20,7 +20,7 @@ export function readAccess(token: string, secret: string): AccessClaims | null {
     if (typeof payload === "string" || typeof payload.sub !== "string") {
       return null;
     }
-    if (payload.role !== "player" && payload.role !== "admin") {
+    if (payload.role !== "USER" && payload.role !== "ADMIN") {
       return null;
     }
     if (typeof payload.username !== "string") {

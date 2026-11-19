@@ -12,7 +12,7 @@ describe("online", () => {
         email: "mesa@convergencia.local",
         username: "mesa",
         passwordHash: await hashPassword("senha-admin-teste"),
-        role: "admin",
+        role: "ADMIN",
       },
     });
   });

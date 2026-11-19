@@ -42,6 +42,11 @@ function draw(): void {
       app.append(renderAuth("register"));
       return;
     case "admin":
+      if (session?.role !== "ADMIN") {
+        screen = "menu";
+        app.append(renderMenu());
+        return;
+      }
       app.append(renderAdmin());
       return;
     case "online":
@@ -88,7 +93,7 @@ function renderMenu(): HTMLElement {
       draw();
     }),
   );
-  if (session?.role === "admin") {
+  if (session?.role === "ADMIN") {
     nav.append(
       actionButton("Admin", () => {
         screen = "admin";

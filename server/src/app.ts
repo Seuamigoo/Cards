@@ -29,9 +29,11 @@ const credentials = z.object({
   password: z.string().min(8),
 });
 
-const registerBody = credentials.extend({
-  username: z.string().min(3).max(24),
-});
+const registerBody = credentials
+  .extend({
+    username: z.string().min(3).max(24),
+  })
+  .strip();
 
 const cardBody = z.object({
   name: z.string().min(1),
@@ -106,7 +108,7 @@ export async function buildApp(options: BuildOptions = {}) {
           email: body.data.email.toLowerCase(),
           username: body.data.username,
           passwordHash,
-          role: "player",
+          role: "USER",
         },
       });
       return reply.code(201).send({ id: user.id, email: user.email, username: user.username, role: user.role });
@@ -212,14 +214,14 @@ export async function buildApp(options: BuildOptions = {}) {
   });
 
   app.get("/admin/cards", async (request, reply) => {
-    if ((await requireAdmin(request, reply, env)) === null) {
+    if ((await requireAdmin(request, reply, env, prisma)) === null) {
       return;
     }
     return prisma.cardRecord.findMany({ orderBy: { createdAt: "desc" } });
   });
 
   app.post("/admin/cards", async (request, reply) => {
-    if ((await requireAdmin(request, reply, env)) === null) {
+    if ((await requireAdmin(request, reply, env, prisma)) === null) {
       return;
     }
     const body = cardBody.safeParse(request.body);
@@ -236,7 +238,7 @@ export async function buildApp(options: BuildOptions = {}) {
   });
 
   app.patch("/admin/cards/:id", async (request, reply) => {
-    if ((await requireAdmin(request, reply, env)) === null) {
+    if ((await requireAdmin(request, reply, env, prisma)) === null) {
       return;
     }
     const id = (request.params as { id: string }).id;
@@ -252,7 +254,7 @@ export async function buildApp(options: BuildOptions = {}) {
   });
 
   app.delete("/admin/cards/:id", async (request, reply) => {
-    if ((await requireAdmin(request, reply, env)) === null) {
+    if ((await requireAdmin(request, reply, env, prisma)) === null) {
       return;
     }
     const id = (request.params as { id: string }).id;
@@ -268,7 +270,7 @@ export async function buildApp(options: BuildOptions = {}) {
   });
 
   app.post("/admin/cards/:id/image", async (request, reply) => {
-    if ((await requireAdmin(request, reply, env)) === null) {
+    if ((await requireAdmin(request, reply, env, prisma)) === null) {
       return;
     }
     const id = (request.params as { id: string }).id;
@@ -295,7 +297,7 @@ export async function buildApp(options: BuildOptions = {}) {
   });
 
   app.post("/admin/catalog/publish", async (request, reply) => {
-    if ((await requireAdmin(request, reply, env)) === null) {
+    if ((await requireAdmin(request, reply, env, prisma)) === null) {
       return;
     }
     const cards = await prisma.cardRecord.findMany({ where: { status: "published" }, orderBy: { name: "asc" } });
@@ -412,22 +414,28 @@ async function requireUser(request: FastifyRequest, reply: FastifyReply, env: Se
   return claims;
 }
 
-async function requireAdmin(request: FastifyRequest, reply: FastifyReply, env: ServerEnv): Promise<AccessClaims | null> {
+async function requireAdmin(
+  request: FastifyRequest,
+  reply: FastifyReply,
+  env: ServerEnv,
+  prisma: PrismaClient,
+): Promise<AccessClaims | null> {
   const claims = await requireUser(request, reply, env);
   if (claims === null) {
     return null;
   }
-  if (claims.role !== "admin") {
+  const user = await prisma.user.findUnique({ where: { id: claims.sub } });
+  if (claims.role !== "ADMIN" || user === null || user.role !== "ADMIN") {
     await reply.code(403).send({ error: "Acesso de admin necessário." });
     return null;
   }
   return claims;
 }
 
-function isRole(role: string): role is "player" | "admin" {
+function isRole(role: string): role is "USER" | "ADMIN" {
   switch (role) {
-    case "player":
-    case "admin":
+    case "USER":
+    case "ADMIN":
       return true;
     default:
       return false;
