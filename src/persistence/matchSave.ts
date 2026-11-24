@@ -349,7 +349,12 @@ function parseCard(value: unknown): Card | null {
   if (typeof value.name !== "string" || value.name.length === 0 || !isRarity(value.rarity)) {
     return null;
   }
-  const base = { id: value.id, name: value.name, rarity: value.rarity };
+  const base = {
+    id: value.id,
+    name: value.name,
+    rarity: value.rarity,
+    ...(typeof value.instanceId === "string" && value.instanceId.length > 0 ? { instanceId: value.instanceId } : {}),
+  };
   const card = (() => {
     switch (value.kind) {
       case "monster":
