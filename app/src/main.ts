@@ -2,14 +2,20 @@ import catalogFile from "../../catalog/cards.json";
 import { chooseAction } from "../../src/ai/bot";
 import type { BotLevel } from "../../src/ai/bot";
 import { buildDeck, starterCardIds } from "../../src/catalog/index";
-import { GameMatch, createSeededRng, getLegalActions } from "../../src/domain/index";
-import type { Action, BoardState } from "../../src/domain/index";
+import { GameMatch, createSeededRng } from "../../src/domain/index";
+import type { GameMode } from "../../src/domain/index";
 import { adminCards, apiUrl, loginAccount, publishCatalog, registerAccount, saveCard, uploadCardImage } from "./api";
 import type { AdminCard, Session } from "./api";
 import { CardRegistry, CatalogCache } from "../../src/catalog/index";
 import type { CardRegistryResult } from "../../src/catalog/index";
 import type { Card } from "../../src/domain/index";
 import { MemoryStorageAdapter } from "../../src/persistence/index";
+import { catalogEffectText } from "./board/catalogText";
+import { applyDuelInput, initialDuelView } from "./board/duel";
+import type { DuelInput, DuelViewState } from "./board/duel";
+import { resolveCardArt } from "./board/face";
+import { brasaShowcase } from "./board/showcase";
+import { renderDuel } from "./board/view";
 import "./style.css";
 
 type Screen = "menu" | "collection" | "login" | "register" | "admin" | "online" | "bot";
@@ -24,7 +30,7 @@ if (root === null) {
 const app = root;
 
 let screen: Screen = "menu";
-void refreshCatalog().finally(draw);
+void refreshCatalog().catch(() => undefined).finally(draw);
 
 function draw(): void {
   app.replaceChildren();
@@ -107,6 +113,7 @@ function renderMenu(): HTMLElement {
 
 function renderCollection(result: CardRegistryResult): HTMLElement {
   const main = document.createElement("main");
+  main.className = "collection";
   const title = document.createElement("h1");
   title.textContent = "Coleção";
   const toolbar = document.createElement("div");
@@ -136,7 +143,7 @@ function renderCard(card: Card): HTMLLIElement {
   const item = document.createElement("li");
   if (card.image !== undefined) {
     const image = document.createElement("img");
-    image.src = resolveImage(card.image.src);
+    image.src = resolveCardArt(card.image.src);
     image.alt = card.image.alt ?? card.name;
     item.append(image);
   }
@@ -175,13 +182,6 @@ function disabledButton(label: string): HTMLButtonElement {
   button.disabled = true;
   button.textContent = `${label} (em breve)`;
   return button;
-}
-
-function resolveImage(src: string): string {
-  if (src.startsWith("https://") || src.startsWith("assets/")) {
-    return src;
-  }
-  return apiUrl(`/${src.replace(/^\//, "")}`);
 }
 
 async function refreshCatalog(): Promise<void> {
@@ -427,69 +427,104 @@ async function publishAdmin(status: HTMLElement): Promise<void> {
 
 let botMatch: GameMatch | null = null;
 let botLevel: BotLevel = "easy";
+let duelView: DuelViewState = initialDuelView();
+let duelError: string | null = null;
 const botRng = createSeededRng(9);
+const effectText = catalogEffectText(catalogFile);
 
 function renderBot(): HTMLElement {
   const main = document.createElement("main");
+  main.className = botMatch === null ? "" : "duel-screen";
   const title = document.createElement("h1");
   title.textContent = "Jogar contra bot";
   const toolbar = document.createElement("div");
   toolbar.className = "toolbar";
   toolbar.append(
-    actionButton("Fácil", () => {
-      startBot("easy");
-    }),
-    actionButton("Normal", () => {
-      startBot("normal");
-    }),
+    actionButton("Clássico fácil", () => startBot("classic", "easy")),
+    actionButton("Clássico normal", () => startBot("classic", "normal")),
+    actionButton("Blitz fácil", () => startBot("blitz", "easy")),
+    actionButton("Blitz normal", () => startBot("blitz", "normal")),
+    actionButton("Mesa com Dragão Brasa", () => startBrasa()),
     actionButton("Voltar", () => {
       screen = "menu";
       draw();
     }),
   );
-  main.append(title, toolbar);
   if (botMatch === null) {
+    main.append(title, toolbar);
+    if (duelError !== null) {
+      const alert = document.createElement("p");
+      alert.setAttribute("role", "alert");
+      alert.textContent = duelError;
+      main.append(alert);
+    }
     return main;
   }
-  const state = botMatch.getState();
-  const status = document.createElement("p");
-  const winner = state.winner === null ? `vez do jogador ${state.activePlayerIndex}` : `vencedor ${state.winner}`;
-  status.textContent = `Turno ${state.turn} · ${state.phase} · HP ${state.players[0].hp} x ${state.players[1].hp} · ${winner}`;
-  const hand = document.createElement("p");
-  hand.textContent = `Sua mão: ${state.players[0].hand.map((card) => card.name).join(", ") || "vazia"}`;
-  main.append(status, hand);
-  if (state.winner === null && state.activePlayerIndex === 0) {
-    const actions = document.createElement("div");
-    actions.className = "toolbar";
-    for (const action of getLegalActions(state, 0)) {
-      actions.append(
-        actionButton(labelAction(state, action), () => {
-          botMatch?.dispatch(action);
-          runBot();
-          draw();
-        }),
-      );
-    }
-    main.append(actions);
-  }
+  main.append(renderDuel({
+    state: botMatch.getState(),
+    viewer: 0,
+    view: duelView,
+    texts: effectText,
+    error: duelError,
+    onInput: onDuelInput,
+  }));
+  main.append(toolbar);
   return main;
 }
 
-function startBot(level: BotLevel): void {
+function onDuelInput(input: DuelInput): void {
+  if (botMatch === null) {
+    return;
+  }
+  const result = applyDuelInput(botMatch.getState(), 0, duelView, input);
+  duelView = result.view;
+  if (result.action !== null) {
+    const applied = botMatch.dispatch(result.action);
+    if (!applied.ok) {
+      duelError = applied.error;
+    } else {
+      duelError = null;
+      runBot();
+    }
+  }
+  draw();
+}
+
+function startBot(mode: GameMode, level: BotLevel): void {
   if (!loaded.ok) {
     return;
   }
-  const human = buildDeck(loaded.registry, [...starterCardIds("vanguarda-do-reino", "classic")]);
-  const bot = buildDeck(loaded.registry, [...starterCardIds("marcha-da-necropole", "classic")]);
+  const human = buildDeck(loaded.registry, [...starterCardIds("vanguarda-do-reino", mode)]);
+  const bot = buildDeck(loaded.registry, [...starterCardIds("marcha-da-necropole", mode)]);
   if (!human.ok || !bot.ok) {
     return;
   }
   botLevel = level;
-  botMatch = new GameMatch("classic", ["voce", "bot"], undefined, {
+  duelView = initialDuelView();
+  duelError = null;
+  botMatch = new GameMatch(mode, ["voce", "bot"], undefined, {
     decks: [human.cards, bot.cards],
     seed: 1,
   });
   runBot();
+  draw();
+}
+
+function startBrasa(): void {
+  if (!loaded.ok) {
+    return;
+  }
+  const showcase = brasaShowcase(loaded.registry);
+  if (!showcase.ok) {
+    duelError = showcase.error;
+    botMatch = null;
+    draw();
+    return;
+  }
+  botLevel = "easy";
+  duelView = initialDuelView();
+  duelError = null;
+  botMatch = showcase.match;
   draw();
 }
 
@@ -505,35 +540,6 @@ function runBot(): void {
     const result = botMatch.dispatch(action);
     if (!result.ok) {
       return;
-    }
-  }
-}
-
-function labelAction(state: BoardState, action: Action): string {
-  switch (action.type) {
-    case "advancePhase":
-      return "Avançar fase";
-    case "summonMonster":
-      return `Invocar ${state.players[0].hand[action.handIndex]?.name ?? "monstro"} (${action.position === "attack" ? "Ataque" : "Defesa"})`;
-    case "changePosition":
-      return `Mudar posição ${action.zoneIndex + 1}`;
-    case "setSpellTrap":
-      return `Posicionar ${state.players[0].hand[action.handIndex]?.name ?? "carta"}`;
-    case "summonTower":
-      return "Invocar Torre";
-    case "playBiome":
-      return "Jogar Bioma";
-    case "converge":
-      return `Convergência ${state.players[0].lineageDeck[action.lineageIndex]?.name ?? "Mestiço"}`;
-    case "fuseBrasa":
-      return "Fundir Dragão Brasa";
-    case "activate":
-      return `Ativar ${state.players[0].monsterZone[action.zoneIndex]?.card.name ?? "efeito"}`;
-    case "attack":
-      return `Atacar ${action.target.kind}`;
-    default: {
-      const unexpected: never = action;
-      return String(unexpected);
     }
   }
 }

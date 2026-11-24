@@ -61,11 +61,19 @@ li {
   border-bottom: 1px solid #3a3126;
 }
 
-img {
+.collection img {
   width: 84px;
   height: 84px;
   object-fit: cover;
   background: #2a2118;
+}
+
+.duel-screen {
+  max-width: min(1180px, 100%);
+}
+
+.duel-screen > .toolbar {
+  margin-top: 18px;
 }
 
 li div {
