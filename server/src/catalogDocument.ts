@@ -28,6 +28,8 @@ function toDefinition(card: CardRecord): Record<string, unknown> {
     ...(card.atk !== null ? { atk: card.atk } : {}),
     ...(card.def !== null ? { def: card.def } : {}),
     ...(card.kind === "monster" ? { tags: readList(card.tags), keywords: readList(card.keywords) } : {}),
+    ...(card.cardClass !== null ? { class: card.cardClass } : {}),
+    ...(readList(card.effects).length > 0 ? { effects: readList(card.effects) } : {}),
     ...(card.imagePath !== null ? { image: { src: card.imagePath, alt: card.name } } : {}),
   };
 }

@@ -1,6 +1,6 @@
 import type { CardImage } from "../domain/state";
 
-const IMAGE_EXTENSIONS = new Set([".png", ".jpg", ".jpeg", ".webp"]);
+const IMAGE_EXTENSIONS = new Set([".png", ".jpg", ".jpeg", ".webp", ".svg"]);
 
 export function readCardImage(value: unknown): CardImage | null {
   if (typeof value !== "object" || value === null || Array.isArray(value)) {
