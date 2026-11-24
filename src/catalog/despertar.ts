@@ -209,7 +209,7 @@ export const DESPERTAR_CARDS: readonly DespertarCard[] = [
     tags: ["DRAGON", "WARRIOR"],
     classTag: "WARRIOR",
     keywords: [],
-    effects: [wired("Não pode ser invocado normalmente. Na sua Main, com 3 Filhotes de Brasa, é invocado da mão: os Filhotes se fundem como materiais e ele ganha +300 ATK por Filhote.")],
+    effects: [wired("Não pode ser invocado normalmente. Se você controla 3 Filhotes de Brasa no campo, invoque este card da mão e os 3 se fundem a ele como materiais. Ganha +300 ATK por Filhote fundido. Quando vai pro Limbo, os materiais vão junto.")],
   },
   {
     id: "draconato-kaelthar",
