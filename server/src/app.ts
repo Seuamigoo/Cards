@@ -87,7 +87,10 @@ export async function buildApp(options: BuildOptions = {}) {
   app.addHook("onClose", async () => {
     await prisma.$disconnect();
   });
-  await app.register(cors, { origin: env.corsOrigin, credentials: true });
+  await app.register(cors, {
+    origin: env.corsOrigins.length === 1 ? env.corsOrigins[0] ?? env.corsOrigin : [...env.corsOrigins],
+    credentials: true,
+  });
   await app.register(cookie);
   await app.register(multipart, { limits: { fileSize: MAX_IMAGE_BYTES } });
   await app.register(rateLimit, { global: false });
