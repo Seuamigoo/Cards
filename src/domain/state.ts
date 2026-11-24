@@ -15,6 +15,16 @@ interface CardBase {
   readonly rarity: CardRarity;
   readonly image?: CardImage;
   readonly flavor?: string;
+  /** Identidade desta cópia física, estável da mão ao Limbo. */
+  readonly instanceId?: string;
+}
+
+let nextInstance = 1;
+
+export function createInstanceId(): string {
+  const id = `inst-${nextInstance}`;
+  nextInstance += 1;
+  return id;
 }
 
 export type BattlePosition = "attack" | "defense";
@@ -119,12 +129,14 @@ export function opponentOf(index: PlayerIndex): PlayerIndex {
 
 export function copyCard<T extends Card>(card: T): T {
   const image = imagePart(card);
+  const identity = { instanceId: card.instanceId ?? createInstanceId() };
   switch (card.kind) {
     case "monster":
       return {
         id: card.id,
         name: card.name,
         rarity: card.rarity,
+        ...identity,
         ...image,
         kind: "monster",
         level: card.level,
@@ -135,21 +147,22 @@ export function copyCard<T extends Card>(card: T): T {
         ...flavorPart(card),
       } as unknown as T;
     case "spell":
-      return { id: card.id, name: card.name, rarity: card.rarity, ...image, ...flavorPart(card), kind: "spell" } as T;
+      return { id: card.id, name: card.name, rarity: card.rarity, ...identity, ...image, ...flavorPart(card), kind: "spell" } as T;
     case "trap":
-      return { id: card.id, name: card.name, rarity: card.rarity, ...image, ...flavorPart(card), kind: "trap" } as T;
+      return { id: card.id, name: card.name, rarity: card.rarity, ...identity, ...image, ...flavorPart(card), kind: "trap" } as T;
     case "tower":
       return {
         id: card.id,
         name: card.name,
         rarity: card.rarity,
+        ...identity,
         ...image,
         kind: "tower",
         def: card.def,
         ...flavorPart(card),
       } as T;
     case "biome":
-      return { id: card.id, name: card.name, rarity: card.rarity, ...image, ...flavorPart(card), kind: "biome" } as T;
+      return { id: card.id, name: card.name, rarity: card.rarity, ...identity, ...image, ...flavorPart(card), kind: "biome" } as T;
     default: {
       const unexpected: never = card;
       throw new Error(`Carta inválida: ${String(unexpected)}.`);

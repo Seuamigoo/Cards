@@ -1,6 +1,11 @@
 import type { AttackTarget } from "./combatRules";
-import type { Phase, PlayerIndex } from "./state";
-import type { BiomeCard, Card, MonsterCard, TowerCard } from "./state";
+import type { BattlePosition, Phase, PlayerIndex } from "./state";
+import type { BiomeCard, Card, MonsterCard, SpellTrapCard, TowerCard } from "./state";
+
+export type CardDestination = "limbo" | "graveyard";
+export type CardOrigin = "monster" | "hand" | "tower" | "biome" | "spelltrap" | "material";
+export type DamageTarget = "player" | "monster" | "tower";
+export type EffectKind = "onSummon" | "activate" | "aura";
 
 export interface PhaseChangedEvent {
   readonly from: Phase;
@@ -18,42 +23,108 @@ export interface CardDrawnEvent {
   readonly playerIndex: PlayerIndex;
   readonly card: Card;
   readonly turn: number;
+  readonly instanceId: string;
+  readonly cardId: string;
 }
 
 export interface MonsterSummonedEvent {
   readonly playerIndex: PlayerIndex;
   readonly card: MonsterCard;
   readonly zoneIndex: number;
+  readonly position: BattlePosition;
+  readonly instanceId: string;
+  readonly cardId: string;
+}
+
+export interface MonsterPositionEvent {
+  readonly playerIndex: PlayerIndex;
+  readonly zoneIndex: number;
+  readonly position: BattlePosition;
+  readonly instanceId: string;
+  readonly cardId: string;
+}
+
+export interface SpellTrapSetEvent {
+  readonly playerIndex: PlayerIndex;
+  readonly zoneIndex: number;
+  readonly card: SpellTrapCard;
+  readonly instanceId: string;
+  readonly cardId: string;
+}
+
+export interface SpellTrapActivatedEvent {
+  readonly playerIndex: PlayerIndex;
+  readonly zoneIndex: number;
+  readonly instanceId: string;
+  readonly cardId: string;
+}
+
+export interface EffectActivatedEvent {
+  readonly playerIndex: PlayerIndex;
+  readonly zoneIndex: number | null;
+  readonly instanceId: string;
+  readonly cardId: string;
+  readonly kind: EffectKind;
 }
 
 export interface MonsterFusedEvent {
   readonly playerIndex: PlayerIndex;
   readonly card: MonsterCard;
   readonly zoneIndex: number;
+  readonly position: BattlePosition;
+  readonly instanceId: string;
+  readonly cardId: string;
   readonly materials: readonly MonsterCard[];
+  readonly materialInstanceIds: readonly string[];
 }
 
 export interface MaterialsReleasedEvent {
   readonly playerIndex: PlayerIndex;
+  readonly zoneIndex: number;
+  readonly instanceId: string;
+  readonly cardId: string;
   readonly cards: readonly MonsterCard[];
+  readonly materialInstanceIds: readonly string[];
+}
+
+export interface CardSentEvent {
+  readonly playerIndex: PlayerIndex;
+  readonly instanceId: string;
+  readonly cardId: string;
+  readonly destination: CardDestination;
+  readonly from: CardOrigin;
+  readonly zoneIndex: number | null;
 }
 
 export interface TowerSummonedEvent {
   readonly playerIndex: PlayerIndex;
   readonly card: TowerCard;
   readonly def: number;
+  readonly instanceId: string;
+  readonly cardId: string;
 }
 
 export interface TowerDestroyedEvent {
   readonly playerIndex: PlayerIndex;
   readonly card: TowerCard;
   readonly def: number;
+  readonly instanceId: string;
+  readonly cardId: string;
 }
 
 export interface BiomePlayedEvent {
   readonly playerIndex: PlayerIndex;
   readonly card: BiomeCard;
   readonly replaced: BiomeCard | null;
+  readonly instanceId: string;
+  readonly cardId: string;
+}
+
+export interface BiomeLeftEvent {
+  readonly playerIndex: PlayerIndex;
+  readonly card: BiomeCard;
+  readonly instanceId: string;
+  readonly cardId: string;
 }
 
 export type GameOverReason = "deck_out" | "player_hp";
@@ -62,18 +133,28 @@ export interface AttackDeclaredEvent {
   readonly playerIndex: PlayerIndex;
   readonly attackerZoneIndex: number;
   readonly target: AttackTarget;
+  readonly instanceId: string;
+  readonly cardId: string;
+  readonly targetInstanceId: string | null;
+  readonly targetCardId: string | null;
 }
 
 export interface MonsterDestroyedEvent {
   readonly playerIndex: PlayerIndex;
   readonly zoneIndex: number;
   readonly card: MonsterCard;
+  readonly instanceId: string;
+  readonly cardId: string;
 }
 
 export interface DamageDealtEvent {
   readonly playerIndex: PlayerIndex;
   readonly amount: number;
-  readonly source: "battle";
+  readonly source: "battle" | "effect";
+  readonly target: DamageTarget;
+  readonly zoneIndex: number | null;
+  readonly instanceId: string | null;
+  readonly cardId: string | null;
 }
 
 export interface GameOverEvent {
@@ -86,11 +167,17 @@ export interface GameEventMap {
   "turn:started": TurnStartedEvent;
   "card:drawn": CardDrawnEvent;
   "monster:summoned": MonsterSummonedEvent;
+  "monster:position": MonsterPositionEvent;
+  "spelltrap:set": SpellTrapSetEvent;
+  "spelltrap:activated": SpellTrapActivatedEvent;
+  "effect:activated": EffectActivatedEvent;
   "monster:fused": MonsterFusedEvent;
   "materials:released": MaterialsReleasedEvent;
+  "card:sent": CardSentEvent;
   "tower:summoned": TowerSummonedEvent;
   "tower:destroyed": TowerDestroyedEvent;
   "biome:played": BiomePlayedEvent;
+  "biome:left": BiomeLeftEvent;
   "game:over": GameOverEvent;
   "attack:declared": AttackDeclaredEvent;
   "monster:destroyed": MonsterDestroyedEvent;
@@ -107,11 +194,17 @@ export class EventBus {
     "turn:started": new Set(),
     "card:drawn": new Set(),
     "monster:summoned": new Set(),
+    "monster:position": new Set(),
+    "spelltrap:set": new Set(),
+    "spelltrap:activated": new Set(),
+    "effect:activated": new Set(),
     "monster:fused": new Set(),
     "materials:released": new Set(),
+    "card:sent": new Set(),
     "tower:summoned": new Set(),
     "tower:destroyed": new Set(),
     "biome:played": new Set(),
+    "biome:left": new Set(),
     "game:over": new Set(),
     "attack:declared": new Set(),
     "monster:destroyed": new Set(),
@@ -143,16 +236,28 @@ export class EventBus {
         return this.handlers["card:drawn"] as Set<Handler<K>>;
       case "monster:summoned":
         return this.handlers["monster:summoned"] as Set<Handler<K>>;
+      case "monster:position":
+        return this.handlers["monster:position"] as Set<Handler<K>>;
+      case "spelltrap:set":
+        return this.handlers["spelltrap:set"] as Set<Handler<K>>;
+      case "spelltrap:activated":
+        return this.handlers["spelltrap:activated"] as Set<Handler<K>>;
+      case "effect:activated":
+        return this.handlers["effect:activated"] as Set<Handler<K>>;
       case "monster:fused":
         return this.handlers["monster:fused"] as Set<Handler<K>>;
       case "materials:released":
         return this.handlers["materials:released"] as Set<Handler<K>>;
+      case "card:sent":
+        return this.handlers["card:sent"] as Set<Handler<K>>;
       case "tower:summoned":
         return this.handlers["tower:summoned"] as Set<Handler<K>>;
       case "tower:destroyed":
         return this.handlers["tower:destroyed"] as Set<Handler<K>>;
       case "biome:played":
         return this.handlers["biome:played"] as Set<Handler<K>>;
+      case "biome:left":
+        return this.handlers["biome:left"] as Set<Handler<K>>;
       case "game:over":
         return this.handlers["game:over"] as Set<Handler<K>>;
       case "attack:declared":
