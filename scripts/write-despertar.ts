@@ -20,6 +20,7 @@ const toJson = (card: (typeof DESPERTAR_CARDS)[number]) => ({
   ...(card.keywords !== undefined ? { keywords: card.keywords } : {}),
   effects: card.effects,
   ...(card.todo !== undefined ? { todo: card.todo } : {}),
+  ...(card.flavor !== undefined ? { flavor: card.flavor } : {}),
   image: despertarImage(card),
 });
 

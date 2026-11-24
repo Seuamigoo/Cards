@@ -33,11 +33,11 @@ describe("CardRegistry", () => {
     }
     expect(loaded.registry.version()).toBe(1);
     expect(loaded.registry.publishedAt()).toBe("2026-11-17T00:00:00.000Z");
-    expect(loaded.registry.all()).toHaveLength(33);
-    expect(loaded.registry.byKind("monster")).toHaveLength(20);
+    expect(loaded.registry.all()).toHaveLength(78);
+    expect(loaded.registry.byKind("monster")).toHaveLength(63);
     expect(loaded.registry.byKind("spell")).toHaveLength(6);
     expect(loaded.registry.byKind("trap")).toHaveLength(3);
-    expect(loaded.registry.byKind("tower")).toHaveLength(2);
+    expect(loaded.registry.byKind("tower")).toHaveLength(4);
     expect(loaded.registry.byKind("biome")).toHaveLength(2);
     expect(loaded.registry.get("cidadela-do-rei")).toMatchObject({ kind: "tower", def: 2200 });
     expect(loaded.registry.get("ausente")).toBeUndefined();

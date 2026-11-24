@@ -134,6 +134,7 @@ export class GameMatch {
         return;
       case "summonMonster":
         this.publishMonster(before, action.handIndex, action.zoneIndex);
+        this.publishReleased(before, after);
         return;
       case "setSpellTrap":
         return;
@@ -147,9 +148,17 @@ export class GameMatch {
         return;
       case "converge":
         this.publishConvergence(before, action);
+        this.publishReleased(before, after);
+        return;
+      case "fuseBrasa":
+        this.publishMonster(before, action.handIndex, action.zoneIndex);
+        this.publishFusion(after, action);
+        return;
+      case "activate":
         return;
       case "attack":
         this.publishAttack(before, after, action.attackerZoneIndex, action.target);
+        this.publishReleased(before, after);
         return;
       default: {
         const unexpected: never = action;
@@ -227,6 +236,35 @@ export class GameMatch {
       return;
     }
     this.events.emit("monster:destroyed", { playerIndex, zoneIndex, card: card.card });
+  }
+
+  private publishFusion(after: BoardState, action: Extract<Action, { type: "fuseBrasa" }>): void {
+    const playerIndex = after.activePlayerIndex;
+    const slot = after.players[playerIndex].monsterZone[action.zoneIndex];
+    if (slot === null || slot === undefined) {
+      return;
+    }
+    this.events.emit("monster:fused", {
+      playerIndex,
+      card: slot.card,
+      zoneIndex: action.zoneIndex,
+      materials: slot.materials ?? [],
+    });
+  }
+
+  private publishReleased(before: BoardState, after: BoardState): void {
+    for (const playerIndex of [0, 1] as const) {
+      before.players[playerIndex].monsterZone.forEach((slot, zoneIndex) => {
+        const next = after.players[playerIndex].monsterZone[zoneIndex];
+        if (slot === null || slot === undefined || (slot.materials?.length ?? 0) === 0 || next !== null) {
+          return;
+        }
+        this.events.emit("materials:released", {
+          playerIndex,
+          cards: [slot.card, ...(slot.materials ?? [])],
+        });
+      });
+    }
   }
 
   private publishConvergence(before: BoardState, action: Extract<Action, { type: "converge" }>): void {

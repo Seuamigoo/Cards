@@ -10,14 +10,12 @@ describe("set Despertar", () => {
     if (!loaded.ok) {
       return;
     }
-    // A seção 13 diz "32 cartas", mas as tabelas nomeiam 33 do deck principal e os decks usam as 33.
-    expect(DESPERTAR_CARDS).toHaveLength(33);
-    expect(loaded.registry.all()).toHaveLength(33);
-    expect(DESPERTAR_PENDING.map((card) => card.id)).toEqual(["draconato-kaelthar", "ceifador-carmesim"]);
-    for (const card of DESPERTAR_PENDING) {
-      expect(card.todo).toEqual(["Nível não consta no GDD v0.2."]);
-      expect(card.level).toBeUndefined();
-    }
+    expect(DESPERTAR_CARDS).toHaveLength(78);
+    expect(loaded.registry.all()).toHaveLength(78);
+    expect(DESPERTAR_PENDING).toHaveLength(0);
+    expect(loaded.registry.get("draconato-kaelthar")).toMatchObject({ level: 7 });
+    expect(loaded.registry.get("ceifador-carmesim")).toMatchObject({ level: 6 });
+    expect(loaded.registry.get("dragao-brasa")).toMatchObject({ level: 7, atk: 1800, def: 2200 });
     for (const deck of STARTER_DECKS) {
       for (const mode of ["classic", "blitz"] as const) {
         const ids = starterCardIds(deck.id, mode);
@@ -40,19 +38,13 @@ describe("set Despertar", () => {
     }
   });
 
-  it("liga ao motor só as palavras-chave já resolvidas e marca o resto", () => {
-    const wired = DESPERTAR_CARDS.flatMap((card) =>
-      card.effects.filter((effect) => effect.implemented).map(() => card.id),
-    );
-    expect(wired.sort()).toEqual(
-      ["arqueiro-espectral", "carnical-faminto", "escudeiro-juramentado", "lamina-sem-brasao", "rei-aldren"].sort(),
-    );
-    const spectral = DESPERTAR_CARDS.find((card) => card.id === "arqueiro-espectral");
-    expect(spectral?.keywords).toEqual(["ataqueTorre"]);
-    const rush = DESPERTAR_CARDS.find((card) => card.id === "lamina-sem-brasao");
-    expect(rush?.keywords).toEqual(["impeto"]);
-    const pending = DESPERTAR_CARDS.flatMap((card) => card.effects.filter((effect) => !effect.implemented));
-    expect(pending.length).toBeGreaterThan(0);
-    expect(pending.every((effect) => effect.implemented === false && effect.text.length > 0)).toBe(true);
+  it("marca efeitos do lote novo como implementados e mantém o texto antigo pendente", () => {
+    const byId = new Map(DESPERTAR_CARDS.map((card) => [card.id, card]));
+    expect(byId.get("batedora-da-folhagem")?.effects.every((effect) => effect.implemented)).toBe(true);
+    expect(byId.get("alfa-da-matilha")?.effects.every((effect) => effect.implemented)).toBe(true);
+    expect(byId.get("pocao-de-campanha")?.effects.every((effect) => effect.implemented)).toBe(false);
+    expect(byId.get("recruta-da-muralha")?.flavor).toContain("Cidadela");
+    expect(byId.get("mineiro-da-forja-funda")?.flavor?.length).toBeGreaterThan(0);
+    expect(byId.get("engrenagem-sentinela")?.effects).toEqual([]);
   });
 });

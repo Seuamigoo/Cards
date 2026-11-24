@@ -1,7 +1,9 @@
 import { canDeclareAttack, getLegalTargets, skipsBattle } from "./combatRules";
 import type { AttackTarget } from "./combatRules";
 import { nextPhase } from "./phases";
-import { AGULHA_CARD_ID, combinations, hasKeyword, isMestico, materialsCoverParents, parentRaces, towerDefense, tributesRequired } from "./rules";
+import { DRAGAO_BRASA_ID, FILHOTE_BRASA_ID, needsSummonTarget, scriptOf } from "./cardScripts";
+import { applyHeal, applyOnSummon, clearTemporary, effectiveAttack, effectiveDefense, effectiveTowerDefense, onBattleDestroy, removeMonster } from "./effects";
+import { AGULHA_CARD_ID, combinations, hasKeyword, isMestico, materialsCoverParents, parentRaces, tributesRequired } from "./rules";
 import { copyCard, opponentOf } from "./state";
 import type {
   BattlePosition,
@@ -25,7 +27,16 @@ export type Action =
       readonly zoneIndex: number;
       readonly position: BattlePosition;
       readonly tributeZoneIndexes: readonly number[];
+      readonly effectTargetZoneIndex?: number;
     }
+  | {
+      readonly type: "fuseBrasa";
+      readonly handIndex: number;
+      readonly zoneIndex: number;
+      readonly position: BattlePosition;
+      readonly materialZoneIndexes: readonly number[];
+    }
+  | { readonly type: "activate"; readonly zoneIndex: number }
   | { readonly type: "changePosition"; readonly zoneIndex: number }
   | { readonly type: "setSpellTrap"; readonly handIndex: number; readonly zoneIndex: number }
   | { readonly type: "summonTower"; readonly handIndex: number }
@@ -63,6 +74,7 @@ interface DraftPlayer {
   normalSummonedThisTurn: boolean;
   lineageDeck: MonsterCard[];
   convergedThisTurn: boolean;
+  brasaFusedThisTurn: boolean;
 }
 
 export function getLegalActions(state: BoardState, playerIndex: PlayerIndex): readonly Action[] {
@@ -91,8 +103,9 @@ export function getLegalActions(state: BoardState, playerIndex: PlayerIndex): re
     switch (card.kind) {
       case "monster":
         if (!player.normalSummonedThisTurn) {
-          actions.push(...listSummons(player, handIndex, card));
+          actions.push(...listSummons(player, state.players[opponentOf(playerIndex)], handIndex, card));
         }
+        actions.push(...listBrasa(player, handIndex, card));
         return;
       case "spell":
       case "trap":
@@ -124,6 +137,9 @@ export function getLegalActions(state: BoardState, playerIndex: PlayerIndex): re
   player.monsterZone.forEach((slot, zoneIndex) => {
     if (slot !== null && !slot.summonedThisTurn && !slot.attackedThisTurn && !slot.changedPositionThisTurn) {
       actions.push({ type: "changePosition", zoneIndex });
+    }
+    if (slot !== null && scriptOf(slot.card.id)?.activateHeal !== undefined && slot.activatedThisTurn !== true) {
+      actions.push({ type: "activate", zoneIndex });
     }
   });
 
@@ -157,6 +173,10 @@ export function applyAction(
       return applyPlayBiome(state, playerIndex, action.handIndex);
     case "converge":
       return applyConverge(state, playerIndex, action);
+    case "fuseBrasa":
+      return applyBrasa(state, playerIndex, action);
+    case "activate":
+      return applyActivate(state, playerIndex, action.zoneIndex);
     case "attack":
       return applyAttack(state, playerIndex, action.attackerZoneIndex, action.target);
     default: {
@@ -184,7 +204,19 @@ export function destroyTower(state: BoardState, playerIndex: PlayerIndex): Actio
 function applyAdvance(state: BoardState): ActionResult {
   const to = skipsBattle(state) ? "main2" : nextPhase(state.phase);
   if (state.phase !== "end") {
-    return success(commitBoard(state, state.players, { phase: to }));
+    if (to !== "end") {
+      return success(commitBoard(state, state.players, { phase: to }));
+    }
+    const endingNow = draftOf(state.players[state.activePlayerIndex]);
+    const otherNow = draftOf(state.players[opponentOf(state.activePlayerIndex)]);
+    clearTemporary(endingNow);
+    clearTemporary(otherNow);
+    const cleared = replacePlayer(
+      replacePlayer(state.players, state.activePlayerIndex, commitPlayer(endingNow)),
+      opponentOf(state.activePlayerIndex),
+      commitPlayer(otherNow),
+    );
+    return success(commitBoard(state, cleared, { phase: to }));
   }
 
   const endingIndex = state.activePlayerIndex;
@@ -193,6 +225,7 @@ function applyAdvance(state: BoardState): ActionResult {
   ending.normalSummonedThisTurn = false;
   ending.towerSummonedThisTurn = false;
   ending.convergedThisTurn = false;
+  ending.brasaFusedThisTurn = false;
   ending.monsterZone = ending.monsterZone.map((slot) =>
     slot === null
       ? null
@@ -240,6 +273,9 @@ function applySummonMonster(state: BoardState, playerIndex: PlayerIndex, action:
   if (card.kind !== "monster") {
     return failure("A carta escolhida não é um monstro.");
   }
+  if (card.id === DRAGAO_BRASA_ID) {
+    return failure("O Dragão Brasa não pode ser invocado normalmente.");
+  }
   if (action.position !== "attack" && action.position !== "defense") {
     return failure("Posição de invocação inválida.");
   }
@@ -257,18 +293,21 @@ function applySummonMonster(state: BoardState, playerIndex: PlayerIndex, action:
     return failure(tributeError);
   }
 
+  const opponentIndex = opponentOf(playerIndex);
   const draft = draftOf(player);
+  const opponent = draftOf(state.players[opponentIndex]);
+  if (needsSummonTarget(card.id) && opponentHasMonster(opponent) && !isEnemyMonster(opponent, action.effectTargetZoneIndex)) {
+    return failure("Escolha o monstro inimigo afetado.");
+  }
   const summoned = copyCard(card);
   draft.hand = withoutIndex(draft.hand, action.handIndex);
-  const zoneSlots = [...draft.monsterZone];
   for (const tribute of action.tributeZoneIndexes) {
-    const tributeSlot = zoneSlots[tribute];
-    if (tributeSlot === null || tributeSlot === undefined) {
+    if (draft.monsterZone[tribute] === null || draft.monsterZone[tribute] === undefined) {
       return failure("Tributo inválido.");
     }
-    zoneSlots[tribute] = null;
-    draft.limbo = [...draft.limbo, copyCard(tributeSlot.card)];
+    removeMonster(draft, null, tribute, "leave");
   }
+  const zoneSlots = [...draft.monsterZone];
   zoneSlots[action.zoneIndex] = {
     card: summoned,
     position: action.position,
@@ -278,7 +317,10 @@ function applySummonMonster(state: BoardState, playerIndex: PlayerIndex, action:
   };
   draft.monsterZone = zoneSlots;
   draft.normalSummonedThisTurn = true;
-  return success(commitBoard(state, replacePlayer(state.players, playerIndex, commitPlayer(draft))));
+  const deckOut = applyOnSummon(draft, opponent, action.zoneIndex, action.effectTargetZoneIndex ?? null);
+  const winner = deckOut || opponent.hp <= 0 ? (deckOut ? opponentIndex : playerIndex) : state.winner;
+  const players = replacePlayer(replacePlayer(state.players, playerIndex, commitPlayer(draft)), opponentIndex, commitPlayer(opponent));
+  return success(commitBoard(state, players, { winner }));
 }
 
 function applyChangePosition(state: BoardState, playerIndex: PlayerIndex, zoneIndex: number): ActionResult {
@@ -428,7 +470,7 @@ function applyAttack(
       resolveTowerAttack(attacker, defender, attackerZoneIndex);
       break;
     case "player":
-      defender.hp -= attackerCard.card.atk;
+      defender.hp -= effectiveAttack(attacker, attackerZoneIndex);
       break;
     default: {
       const unexpected: never = target;
@@ -458,12 +500,12 @@ function resolveMonsterBattle(
   if (attackerSlot === null || attackerSlot === undefined || defenderSlot === null || defenderSlot === undefined) {
     return;
   }
-  const atk = attackerSlot.card.atk;
-  const defense = defenderSlot.position === "defense" ? defenderSlot.card.def : defenderSlot.card.atk;
+  const atk = effectiveAttack(attacker, attackerZoneIndex);
+  const defense = defenderSlot.position === "defense" ? effectiveDefense(defender, defenderZoneIndex) : effectiveAttack(defender, defenderZoneIndex);
   if (atk === defense) {
     if (defenderSlot.position === "attack") {
-      destroyMonster(attacker, attackerZoneIndex);
-      destroyMonster(defender, defenderZoneIndex);
+      removeMonster(attacker, defender, attackerZoneIndex, "battle");
+      removeMonster(defender, attacker, defenderZoneIndex, "battle");
     }
     return;
   }
@@ -473,12 +515,13 @@ function resolveMonsterBattle(
     } else if (hasKeyword(attackerSlot.card, "perfurar")) {
       defender.hp -= atk - defense;
     }
-    destroyMonster(defender, defenderZoneIndex);
+    removeMonster(defender, attacker, defenderZoneIndex, "battle");
+    onBattleDestroy(attacker, defender, attackerZoneIndex);
     return;
   }
   attacker.hp -= defense - atk;
   if (defenderSlot.position === "attack") {
-    destroyMonster(attacker, attackerZoneIndex);
+    removeMonster(attacker, defender, attackerZoneIndex, "battle");
   }
 }
 
@@ -487,8 +530,8 @@ function resolveTowerAttack(attacker: DraftPlayer, defender: DraftPlayer, attack
   if (attackerSlot === null || attackerSlot === undefined || defender.towerZone === null) {
     return;
   }
-  const atk = attackerSlot.card.atk;
-  const defense = towerDefense(defender.towerZone);
+  const atk = effectiveAttack(attacker, attackerZoneIndex);
+  const defense = effectiveTowerDefense(defender) ?? 0;
   if (atk > defense) {
     defender.limbo = [...defender.limbo, copyCard(defender.towerZone.card)];
     defender.towerZone = null;
@@ -499,19 +542,70 @@ function resolveTowerAttack(attacker: DraftPlayer, defender: DraftPlayer, attack
   }
 }
 
-function destroyMonster(player: DraftPlayer, zoneIndex: number): void {
-  const slot = player.monsterZone[zoneIndex];
-  if (slot === null || slot === undefined) {
-    return;
+function applyBrasa(state: BoardState, playerIndex: PlayerIndex, action: Extract<Action, { type: "fuseBrasa" }>): ActionResult {
+  const phaseError = mainPhaseError(state.phase);
+  if (phaseError !== null) {
+    return failure(phaseError);
   }
-  const zone = [...player.monsterZone];
-  zone[zoneIndex] = null;
-  player.monsterZone = zone;
-  if (isMestico(slot.card)) {
-    player.limbo = [...player.limbo, slot.card];
-    return;
+  const player = state.players[playerIndex];
+  if (player.brasaFusedThisTurn === true) {
+    return failure("Só é permitido fundir um Dragão Brasa por turno.");
   }
-  player.graveyard = [...player.graveyard, slot.card];
+  const card = cardAt(player, action.handIndex);
+  if (card === null || card.kind !== "monster" || card.id !== DRAGAO_BRASA_ID) {
+    return failure("Essa carta não é o Dragão Brasa.");
+  }
+  if (action.materialZoneIndexes.length !== 3 || new Set(action.materialZoneIndexes).size !== 3) {
+    return failure("O Dragão Brasa exige 3 Filhotes de Brasa.");
+  }
+  for (const zone of action.materialZoneIndexes) {
+    const material = player.monsterZone[zone];
+    if (material === null || material === undefined || material.card.id !== FILHOTE_BRASA_ID) {
+      return failure("O Dragão Brasa exige 3 Filhotes de Brasa.");
+    }
+  }
+  if (!action.materialZoneIndexes.includes(action.zoneIndex) && player.monsterZone[action.zoneIndex] !== null) {
+    return failure("A zona de monstro está ocupada.");
+  }
+  const draft = draftOf(player);
+  const materials: MonsterCard[] = [];
+  for (const zone of action.materialZoneIndexes) {
+    const material = draft.monsterZone[zone];
+    if (material === null || material === undefined) {
+      return failure("O Dragão Brasa exige 3 Filhotes de Brasa.");
+    }
+    materials.push(copyCard(material.card));
+    const zoneSlots = [...draft.monsterZone];
+    zoneSlots[zone] = null;
+    draft.monsterZone = zoneSlots;
+  }
+  draft.hand = withoutIndex(draft.hand, action.handIndex);
+  const placed = [...draft.monsterZone];
+  placed[action.zoneIndex] = {
+    card: copyCard(card),
+    position: action.position,
+    summonedThisTurn: true,
+    changedPositionThisTurn: false,
+    attackedThisTurn: false,
+    materials,
+  };
+  draft.monsterZone = placed;
+  draft.brasaFusedThisTurn = true;
+  return success(commitBoard(state, replacePlayer(state.players, playerIndex, commitPlayer(draft))));
+}
+
+function applyActivate(state: BoardState, playerIndex: PlayerIndex, zoneIndex: number): ActionResult {
+  const phaseError = mainPhaseError(state.phase);
+  if (phaseError !== null) {
+    return failure(phaseError);
+  }
+  const slot = state.players[playerIndex].monsterZone[zoneIndex];
+  if (slot === null || slot === undefined || scriptOf(slot.card.id)?.activateHeal === undefined || slot.activatedThisTurn === true) {
+    return failure("Esse monstro não pode ativar o efeito.");
+  }
+  const draft = draftOf(state.players[playerIndex]);
+  applyHeal(draft, zoneIndex);
+  return success(commitBoard(state, replacePlayer(state.players, playerIndex, commitPlayer(draft))));
 }
 
 function markAttacked(player: DraftPlayer, zoneIndex: number): void {
@@ -627,6 +721,7 @@ function draftOf(player: PlayerState): DraftPlayer {
     normalSummonedThisTurn: player.normalSummonedThisTurn,
     lineageDeck: [...player.lineageDeck],
     convergedThisTurn: player.convergedThisTurn,
+    brasaFusedThisTurn: player.brasaFusedThisTurn === true,
   };
 }
 
@@ -646,6 +741,7 @@ function commitPlayer(draft: DraftPlayer): PlayerState {
     normalSummonedThisTurn: draft.normalSummonedThisTurn,
     lineageDeck: draft.lineageDeck,
     convergedThisTurn: draft.convergedThisTurn,
+    ...(draft.brasaFusedThisTurn ? { brasaFusedThisTurn: true } : {}),
   };
 }
 
@@ -822,7 +918,48 @@ function pushConvergence(
   });
 }
 
-function listSummons(player: PlayerState, handIndex: number, card: MonsterCard): Action[] {
+function listBrasa(player: PlayerState, handIndex: number, card: Card): Action[] {
+  if (card.kind !== "monster" || card.id !== DRAGAO_BRASA_ID || player.brasaFusedThisTurn === true) {
+    return [];
+  }
+  const filhotes = player.monsterZone.flatMap((slot, index) => (slot?.card.id === FILHOTE_BRASA_ID ? [index] : []));
+  const actions: Action[] = [];
+  for (const materialZoneIndexes of combinations(filhotes, 3)) {
+    const vacated = new Set(materialZoneIndexes);
+    player.monsterZone.forEach((slot, zoneIndex) => {
+      if (slot !== null && !vacated.has(zoneIndex)) {
+        return;
+      }
+      for (const position of ["attack", "defense"] as const) {
+        actions.push({ type: "fuseBrasa", handIndex, zoneIndex, position, materialZoneIndexes });
+      }
+    });
+  }
+  return actions;
+}
+
+function summonTargets(opponent: PlayerState, cardId: string): number[] {
+  if (!needsSummonTarget(cardId)) {
+    return [];
+  }
+  return opponent.monsterZone.flatMap((slot, index) => (slot === null ? [] : [index]));
+}
+
+function opponentHasMonster(opponent: DraftPlayer): boolean {
+  return opponent.monsterZone.some((slot) => slot !== null);
+}
+
+function isEnemyMonster(opponent: DraftPlayer, zoneIndex: number | undefined): boolean {
+  if (zoneIndex === undefined) {
+    return false;
+  }
+  return opponent.monsterZone[zoneIndex] !== null && opponent.monsterZone[zoneIndex] !== undefined;
+}
+
+function listSummons(player: PlayerState, opponent: PlayerState, handIndex: number, card: MonsterCard): Action[] {
+  if (card.id === DRAGAO_BRASA_ID) {
+    return [];
+  }
   const needed = tributesRequired(card.level);
   const occupied = player.monsterZone.flatMap((slot, index) => (slot === null ? [] : [index]));
   const actions: Action[] = [];
@@ -833,7 +970,14 @@ function listSummons(player: PlayerState, handIndex: number, card: MonsterCard):
         return;
       }
       for (const position of ["attack", "defense"] as const) {
-        actions.push({ type: "summonMonster", handIndex, zoneIndex, position, tributeZoneIndexes });
+        const targets = summonTargets(opponent, card.id);
+        if (targets.length === 0) {
+          actions.push({ type: "summonMonster", handIndex, zoneIndex, position, tributeZoneIndexes });
+          continue;
+        }
+        for (const effectTargetZoneIndex of targets) {
+          actions.push({ type: "summonMonster", handIndex, zoneIndex, position, tributeZoneIndexes, effectTargetZoneIndex });
+        }
       }
     });
   }

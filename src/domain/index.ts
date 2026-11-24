@@ -28,6 +28,7 @@ export { createSeededRng, shuffle } from "./rng";
 export type { Rng } from "./rng";
 
 export { tributesRequired, towerDefense } from "./rules";
+export { effectiveAttack, effectiveTowerDefense } from "./effects";
 export { getLegalTargets } from "./combatRules";
 export type { AttackTarget } from "./combatRules";
 export { applyAction, destroyTower, getLegalActions } from "./actions";
@@ -43,6 +44,8 @@ export type {
   GameOverEvent,
   GameOverReason,
   MonsterDestroyedEvent,
+  MaterialsReleasedEvent,
+  MonsterFusedEvent,
   MonsterSummonedEvent,
   PhaseChangedEvent,
   TowerDestroyedEvent,
