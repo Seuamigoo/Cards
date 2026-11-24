@@ -17,6 +17,7 @@ export interface DespertarCard {
   readonly keywords?: readonly Keyword[];
   readonly classTag?: string;
   readonly effects: readonly PrintedEffect[];
+  readonly flavor?: string;
   readonly todo?: readonly string[];
 }
 
@@ -35,6 +36,7 @@ function monster(
   def: number,
   effects: readonly PrintedEffect[],
   keywords: readonly Keyword[] = [],
+  flavor?: string,
 ): DespertarCard {
   return {
     id,
@@ -48,6 +50,7 @@ function monster(
     classTag,
     keywords,
     effects,
+    ...(flavor !== undefined ? { flavor } : {}),
   };
 }
 
@@ -82,7 +85,7 @@ export const DESPERTAR_CARDS: readonly DespertarCard[] = [
     kind: "biome",
     effects: [pending("Todos os Mortos-Vivos ganham +200 ATK. Todos os Anjos perdem 200 ATK.")],
   },
-  monster("recruta-da-muralha", "Recruta da Muralha", "comum", 2, "HUMAN", "WARRIOR", 1000, 1200, []),
+  monster("recruta-da-muralha", "Recruta da Muralha", "comum", 2, "HUMAN", "WARRIOR", 1000, 1200, [], [], "Recém-treinado, mas já pronto pra batalha, vestindo o sol da Cidadela."),
   monster("arqueira-da-torre-norte", "Arqueira da Torre Norte", "comum", 3, "HUMAN", "ARCHER", 1200, 800, [
     pending("Ao ser invocada: a Torre inimiga perde 400 DEF até o fim do turno."),
   ]),
@@ -113,12 +116,24 @@ export const DESPERTAR_CARDS: readonly DespertarCard[] = [
     ["provocar"],
   ),
   monster("filhote-de-brasa", "Filhote de Brasa", "comum", 3, "DRAGON", "WARRIOR", 1100, 900, [
-    pending("Quando é destruído em batalha: o jogador oponente perde 300 HP."),
+    wired("Quando é destruído em batalha: o jogador oponente perde 300 HP."),
   ]),
   monster("serpe-das-cinzas", "Serpe das Cinzas", "rara", 5, "DRAGON", "MAGE", 2000, 1500, [
     pending("Ao ser invocada: 1 monstro inimigo perde 500 ATK até o fim do turno."),
   ]),
-  monster("esqueleto-guardiao", "Esqueleto Guardião", "comum", 2, "UNDEAD", "WARRIOR", 800, 1400, []),
+  monster(
+    "esqueleto-guardiao",
+    "Esqueleto Guardião",
+    "comum",
+    2,
+    "UNDEAD",
+    "WARRIOR",
+    800,
+    1400,
+    [],
+    [],
+    "Há tanto tempo no posto que o próprio túmulo o esqueceu.",
+  ),
   monster("carnical-faminto", "Carniçal Faminto", "comum", 3, "UNDEAD", "ASSASSIN", 1300, 700, [wired("Ímpeto.")], ["impeto"]),
   monster("acolita-do-ossuario", "Acólita do Ossuário", "incomum", 3, "UNDEAD", "CLERIC", 700, 1200, [
     pending("1x por turno, na sua Main: mande 1 carta da mão pro Limbo e compre 1."),
@@ -183,42 +198,118 @@ export const DESPERTAR_CARDS: readonly DespertarCard[] = [
     kind: "trap",
     effects: [pending("Quando um monstro inimigo ataca sua Torre ou você diretamente: anule o ataque e o jogador oponente perde HP igual à metade do ATK do atacante.")],
   },
-];
-
-export const DESPERTAR_PENDING: readonly DespertarCard[] = [
+  {
+    id: "dragao-brasa",
+    name: "Dragão Brasa",
+    rarity: "epica",
+    kind: "monster",
+    level: 7,
+    atk: 1800,
+    def: 2200,
+    tags: ["DRAGON", "WARRIOR"],
+    classTag: "WARRIOR",
+    keywords: [],
+    effects: [wired("Não pode ser invocado normalmente. Na sua Main, com 3 Filhotes de Brasa, é invocado da mão: os Filhotes se fundem como materiais e ele ganha +300 ATK por Filhote.")],
+  },
   {
     id: "draconato-kaelthar",
     name: "Draconato Kaelthar",
     rarity: "epica",
     kind: "monster",
+    level: 7,
     atk: 2400,
     def: 2000,
     tags: ["HUMAN", "DRAGON", "WARRIOR"],
     classTag: "WARRIOR",
     keywords: ["perfurar"],
     effects: [pending("Os Humanos que você controla ganham +200 ATK."), wired("Perfurar.")],
-    todo: ["Nível não consta no GDD v0.2."],
   },
   {
     id: "ceifador-carmesim",
     name: "Ceifador Carmesim",
     rarity: "epica",
     kind: "monster",
+    level: 6,
     atk: 2300,
     def: 1500,
     tags: ["UNDEAD", "DEMON", "ASSASSIN"],
     classTag: "ASSASSIN",
     keywords: ["impeto"],
     effects: [wired("Ímpeto."), pending("Quando destrói um monstro em batalha: o jogador oponente perde 300 HP.")],
-    todo: ["Nível não consta no GDD v0.2."],
   },
+  {
+    id: "arvore-sentinela",
+    name: "Árvore-Sentinela",
+    rarity: "rara",
+    kind: "tower",
+    def: 1800,
+    effects: [wired("Seus Elfos ganham +200 ATK.")],
+  },
+  {
+    id: "fortaleza-da-montanha",
+    name: "Fortaleza da Montanha",
+    rarity: "rara",
+    kind: "tower",
+    def: 2600,
+    effects: [wired("Seus Anões ganham +200 DEF.")],
+  },
+  monster("batedora-da-folhagem", "Batedora da Folhagem", "comum", 2, "ELF", "ARCHER", 1000, 600, [wired("Ao ser invocada: a Torre inimiga perde 300 DEF até o fim do turno.")]),
+  monster("sentinela-do-bosque", "Sentinela do Bosque", "comum", 3, "ELF", "WARRIOR", 900, 1500, [wired("Provocar.")], ["provocar"]),
+  monster("lamina-do-crepusculo", "Lâmina do Crepúsculo", "incomum", 3, "ELF", "ASSASSIN", 1300, 700, [wired("Ímpeto.")], ["impeto"]),
+  monster("oraculo-das-copas", "Oráculo das Copas", "incomum", 4, "ELF", "MAGE", 1300, 1100, [wired("Ao ser invocado: compre 1 carta.")]),
+  monster("arqueira-mor-sylwen", "Arqueira-Mor Sylwen", "epica", 6, "ELF", "ARCHER", 2200, 1600, [wired("Pode atacar a Torre inimiga mesmo havendo monstros inimigos. Os outros Elfos Arqueiros que você controla ganham +200 ATK.")], ["ataqueTorre"]),
+  monster("mineiro-da-forja-funda", "Mineiro da Forja Funda", "comum", 2, "DWARF", "WARRIOR", 800, 1300, [], [], "Desce onde a forja não esfria e sobe com o ferro ainda quente."),
+  monster("besteiro-de-pedra", "Besteiro de Pedra", "comum", 3, "DWARF", "ARCHER", 1200, 1000, [wired("Ao ser invocado: a Torre inimiga perde 400 DEF até o fim do turno.")]),
+  monster("escudo-de-bigorna", "Escudo de Bigorna", "incomum", 4, "DWARF", "WARRIOR", 1000, 1800, [wired("Provocar.")], ["provocar"]),
+  monster("sacerdote-das-runas", "Sacerdote das Runas", "incomum", 4, "DWARF", "CLERIC", 900, 1500, [wired("Enquanto estiver em campo, sua Torre ganha +300 DEF.")]),
+  monster("rei-ferreiro-thorvak", "Rei-Ferreiro Thorvak", "epica", 7, "DWARF", "WARRIOR", 2400, 2800, [wired("Provocar. Os outros Anões que você controla ganham +300 DEF.")], ["provocar"]),
+  monster("querubim-vigia", "Querubim Vigia", "comum", 2, "ANGEL", "CLERIC", 700, 1100, [wired("Ao ser invocado: você recupera 300 HP.")]),
+  monster("guardiao-alado", "Guardião Alado", "comum", 3, "ANGEL", "WARRIOR", 1000, 1400, [wired("Provocar.")], ["provocar"]),
+  monster("mensageira-da-aurora", "Mensageira da Aurora", "incomum", 4, "ANGEL", "MAGE", 1200, 1200, [wired("Ao ser invocada: compre 1 carta.")]),
+  monster("arqueira-celeste", "Arqueira Celeste", "incomum", 4, "ANGEL", "ARCHER", 1500, 1000, [wired("Ao ser invocada: a Torre inimiga perde 500 DEF até o fim do turno.")]),
+  monster("serafim-justiceiro", "Serafim Justiceiro", "epica", 6, "ANGEL", "WARRIOR", 2300, 1900, [wired("Perfurar. 1x por turno, na sua Main: você recupera 500 HP.")], ["perfurar"]),
+  monster("engrenagem-sentinela", "Engrenagem Sentinela", "comum", 1, "AUTOMATON", "WARRIOR", 600, 1200, [], [], "Gira no mesmo lugar há anos, e ainda não perdeu o compasso."),
+  monster("torreta-mecanica", "Torreta Mecânica", "comum", 3, "AUTOMATON", "ARCHER", 1200, 900, [wired("Ao ser invocada: a Torre inimiga perde 300 DEF até o fim do turno.")]),
+  monster("calculista-de-cobre", "Calculista de Cobre", "incomum", 3, "AUTOMATON", "MAGE", 900, 1200, [wired("Ao ser invocado: se você controla outro Autômato, compre 1 carta.")]),
+  monster("golem-de-latao", "Golem de Latão", "incomum", 4, "AUTOMATON", "WARRIOR", 1400, 1700, [wired("Provocar.")], ["provocar"]),
+  monster("colosso-de-aco", "Colosso de Aço", "epica", 7, "AUTOMATON", "WARRIOR", 2500, 2700, [wired("Ganha +200 ATK por cada outro Autômato que você controla (máx. +600).")]),
+  monster("lobo-da-estepe", "Lobo da Estepe", "comum", 2, "BEAST", "ASSASSIN", 1100, 500, [wired("Ímpeto.")], ["impeto"]),
+  monster("xama-coruja", "Xamã-Coruja", "comum", 3, "BEAST", "CLERIC", 800, 1200, [wired("1x por turno, na sua Main: você recupera 300 HP.")]),
+  monster("javali-encouracado", "Javali Encouraçado", "comum", 3, "BEAST", "WARRIOR", 1200, 1300, [wired("Perfurar.")], ["perfurar"]),
+  monster("pantera-das-sombras", "Pantera das Sombras", "incomum", 4, "BEAST", "ASSASSIN", 1600, 800, [wired("Ímpeto.")], ["impeto"]),
+  monster("alfa-da-matilha", "Alfa da Matilha", "epica", 6, "BEAST", "WARRIOR", 2200, 1500, [wired("As outras Bestas que você controla ganham +200 ATK e Ímpeto.")]),
+  monster("fagulha-viva", "Fagulha Viva", "comum", 2, "ELEMENTAL", "ASSASSIN", 1000, 600, [wired("Ao ser invocada: o jogador oponente perde 200 HP.")]),
+  monster("muralha-de-rocha", "Muralha de Rocha", "comum", 3, "ELEMENTAL", "WARRIOR", 700, 1700, [wired("Provocar.")], ["provocar"]),
+  monster("espirito-da-nevoa", "Espírito da Névoa", "incomum", 3, "ELEMENTAL", "MAGE", 1100, 1100, [wired("Ao ser invocado: 1 monstro inimigo perde 400 ATK até o fim do turno.")]),
+  monster("ondina-da-fonte", "Ondina da Fonte", "incomum", 4, "ELEMENTAL", "CLERIC", 1000, 1500, [wired("1x por turno, na sua Main: você recupera 400 HP.")]),
+  monster("tita-da-tempestade", "Titã da Tempestade", "epica", 7, "ELEMENTAL", "MAGE", 2600, 2200, [wired("Ao ser invocado: todos os monstros inimigos perdem 500 ATK até o fim do turno.")]),
+  monster("enguia-abissal", "Enguia Abissal", "comum", 2, "ABYSSAL", "ASSASSIN", 1000, 500, [wired("Ímpeto.")], ["impeto"]),
+  monster("guardiao-das-fossas", "Guardião das Fossas", "comum", 3, "ABYSSAL", "WARRIOR", 900, 1500, [wired("Provocar.")], ["provocar"]),
+  monster("bruxa-das-mares", "Bruxa das Marés", "incomum", 4, "ABYSSAL", "MAGE", 1300, 1100, [wired("Ao ser invocada: 1 monstro inimigo perde 500 ATK até o fim do turno.")]),
+  monster("assassino-abissal", "Assassino Abissal", "incomum", 4, "ABYSSAL", "ASSASSIN", 1600, 700, [wired("Ímpeto. Quando destrói um monstro em batalha: o jogador oponente perde 300 HP.")], ["impeto"]),
+  monster("leviatan-faminto", "Leviatã Faminto", "epica", 7, "ABYSSAL", "WARRIOR", 2700, 2100, [wired("Perfurar.")], ["perfurar"]),
+  monster("larva-operaria", "Larva Operária", "comum", 1, "SWARM", "WARRIOR", 500, 500, [wired("Ganha +100 ATK por cada outro Enxame que você controla.")]),
+  monster("zangao-picador", "Zangão Picador", "comum", 2, "SWARM", "ASSASSIN", 900, 400, [wired("Ímpeto.")], ["impeto"]),
+  monster("vespa-atiradora", "Vespa Atiradora", "comum", 3, "SWARM", "ARCHER", 1100, 700, [wired("Ao ser invocada: a Torre inimiga perde 300 DEF até o fim do turno.")]),
+  monster("zeladora-da-colmeia", "Zeladora da Colmeia", "incomum", 3, "SWARM", "CLERIC", 600, 1200, [wired("Ao ser invocada: você recupera 200 HP por cada Enxame que você controla.")]),
+  monster("rainha-da-colmeia", "Rainha da Colmeia", "epica", 6, "SWARM", "MAGE", 2000, 1800, [wired("Os outros Enxames que você controla ganham +200 ATK.")]),
 ];
+
+export const DESPERTAR_PENDING: readonly DespertarCard[] = [];
 
 const RACE_LABEL: Readonly<Record<string, string>> = {
   HUMAN: "Humano",
   DRAGON: "Dragão",
   UNDEAD: "Morto-Vivo",
   DEMON: "Demônio",
+  ELF: "Elfo",
+  DWARF: "Anão",
+  ANGEL: "Anjo",
+  AUTOMATON: "Autômato",
+  BEAST: "Besta",
+  ELEMENTAL: "Elemental",
+  ABYSSAL: "Abissal",
+  SWARM: "Enxame",
 };
 
 const CLASS_LABEL: Readonly<Record<string, string>> = {

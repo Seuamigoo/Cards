@@ -1,3 +1,4 @@
+import { hasImpeto } from "./effects";
 import { ignoresMonsterBlock, towerDefense } from "./rules";
 import { opponentOf } from "./state";
 import type { BoardState, MonsterInstance, PlayerIndex } from "./state";
@@ -67,7 +68,7 @@ function declaredAttacker(
   if (monster.position !== "attack" || monster.attackedThisTurn) {
     return null;
   }
-  if (monster.summonedThisTurn && !monster.card.keywords.includes("impeto")) {
+  if (monster.summonedThisTurn && !hasImpeto(state.players[playerIndex], attackerZoneIndex)) {
     return null;
   }
   return monster;

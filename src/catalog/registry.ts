@@ -186,6 +186,7 @@ function buildCard(
     name,
     rarity,
     ...(image !== undefined && image !== null ? { image } : {}),
+    ...(typeof value.flavor === "string" && value.flavor.length > 0 ? { flavor: value.flavor } : {}),
   };
   switch (kind) {
     case "monster":

@@ -26,6 +26,18 @@ export interface MonsterSummonedEvent {
   readonly zoneIndex: number;
 }
 
+export interface MonsterFusedEvent {
+  readonly playerIndex: PlayerIndex;
+  readonly card: MonsterCard;
+  readonly zoneIndex: number;
+  readonly materials: readonly MonsterCard[];
+}
+
+export interface MaterialsReleasedEvent {
+  readonly playerIndex: PlayerIndex;
+  readonly cards: readonly MonsterCard[];
+}
+
 export interface TowerSummonedEvent {
   readonly playerIndex: PlayerIndex;
   readonly card: TowerCard;
@@ -74,6 +86,8 @@ export interface GameEventMap {
   "turn:started": TurnStartedEvent;
   "card:drawn": CardDrawnEvent;
   "monster:summoned": MonsterSummonedEvent;
+  "monster:fused": MonsterFusedEvent;
+  "materials:released": MaterialsReleasedEvent;
   "tower:summoned": TowerSummonedEvent;
   "tower:destroyed": TowerDestroyedEvent;
   "biome:played": BiomePlayedEvent;
@@ -93,6 +107,8 @@ export class EventBus {
     "turn:started": new Set(),
     "card:drawn": new Set(),
     "monster:summoned": new Set(),
+    "monster:fused": new Set(),
+    "materials:released": new Set(),
     "tower:summoned": new Set(),
     "tower:destroyed": new Set(),
     "biome:played": new Set(),
@@ -127,6 +143,10 @@ export class EventBus {
         return this.handlers["card:drawn"] as Set<Handler<K>>;
       case "monster:summoned":
         return this.handlers["monster:summoned"] as Set<Handler<K>>;
+      case "monster:fused":
+        return this.handlers["monster:fused"] as Set<Handler<K>>;
+      case "materials:released":
+        return this.handlers["materials:released"] as Set<Handler<K>>;
       case "tower:summoned":
         return this.handlers["tower:summoned"] as Set<Handler<K>>;
       case "tower:destroyed":

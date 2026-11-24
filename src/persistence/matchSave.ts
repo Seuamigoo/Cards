@@ -269,6 +269,13 @@ function parseMonsterZone(value: unknown, slots: number): readonly (MonsterInsta
     if (entry.siege !== undefined && entry.siege !== true) {
       return null;
     }
+    const materials = readMaterials(entry.materials);
+    if (!materials.ok) {
+      return null;
+    }
+    if (entry.tempAtk !== undefined && typeof entry.tempAtk !== "number") {
+      return null;
+    }
     zone.push({
       card,
       position: entry.position,
@@ -276,6 +283,9 @@ function parseMonsterZone(value: unknown, slots: number): readonly (MonsterInsta
       changedPositionThisTurn: entry.changedPositionThisTurn,
       attackedThisTurn: entry.attackedThisTurn,
       ...(entry.siege === true ? { siege: true } : {}),
+      ...(materials.cards !== undefined ? { materials: materials.cards } : {}),
+      ...(typeof entry.tempAtk === "number" ? { tempAtk: entry.tempAtk } : {}),
+      ...(entry.activatedThisTurn === true ? { activatedThisTurn: true } : {}),
     });
   }
   return zone;
@@ -359,7 +369,32 @@ function parseCard(value: unknown): Card | null {
   if (card === null) {
     return null;
   }
-  return applyImage(card, value);
+  const imaged = applyImage(card, value);
+  if (imaged === null) {
+    return null;
+  }
+  if (typeof value.flavor !== "string" || value.flavor.length === 0) {
+    return imaged;
+  }
+  return { ...imaged, flavor: value.flavor };
+}
+
+function readMaterials(value: unknown): { ok: true; cards?: MonsterCard[] } | { ok: false } {
+  if (value === undefined) {
+    return { ok: true };
+  }
+  if (!Array.isArray(value)) {
+    return { ok: false };
+  }
+  const cards: MonsterCard[] = [];
+  for (const entry of value) {
+    const card = parseCard(entry);
+    if (card === null || card.kind !== "monster") {
+      return { ok: false };
+    }
+    cards.push(card);
+  }
+  return cards.length > 0 ? { ok: true, cards } : { ok: true };
 }
 
 function applyImage<T extends Card>(card: T, value: Record<string, unknown>): T | null {

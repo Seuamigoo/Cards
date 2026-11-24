@@ -525,6 +525,10 @@ function labelAction(state: BoardState, action: Action): string {
       return "Jogar Bioma";
     case "converge":
       return `Convergência ${state.players[0].lineageDeck[action.lineageIndex]?.name ?? "Mestiço"}`;
+    case "fuseBrasa":
+      return "Fundir Dragão Brasa";
+    case "activate":
+      return `Ativar ${state.players[0].monsterZone[action.zoneIndex]?.card.name ?? "efeito"}`;
     case "attack":
       return `Atacar ${action.target.kind}`;
     default: {

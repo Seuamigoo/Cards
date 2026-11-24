@@ -83,6 +83,7 @@
       "class": "WARRIOR",
       "keywords": [],
       "effects": [],
+      "flavor": "Recém-treinado, mas já pronto pra batalha, vestindo o sol da Cidadela.",
       "image": {
         "src": "assets/cards/recruta-da-muralha.svg",
         "alt": "Recruta da Muralha"
@@ -315,7 +316,7 @@
       "effects": [
         {
           "text": "Quando é destruído em batalha: o jogador oponente perde 300 HP.",
-          "implemented": false
+          "implemented": true
         }
       ],
       "image": {
@@ -363,6 +364,7 @@
       "class": "WARRIOR",
       "keywords": [],
       "effects": [],
+      "flavor": "Há tanto tempo no posto que o próprio túmulo o esqueceu.",
       "image": {
         "src": "assets/cards/esqueleto-guardiao.svg",
         "alt": "Esqueleto Guardião"
@@ -715,14 +717,38 @@
         "src": "assets/cards/contra-ataque.svg",
         "alt": "Contra-Ataque"
       }
-    }
-  ],
-  "pending": [
+    },
+    {
+      "id": "dragao-brasa",
+      "name": "Dragão Brasa",
+      "rarity": "epica",
+      "kind": "monster",
+      "level": 7,
+      "atk": 1800,
+      "def": 2200,
+      "tags": [
+        "DRAGON",
+        "WARRIOR"
+      ],
+      "class": "WARRIOR",
+      "keywords": [],
+      "effects": [
+        {
+          "text": "Não pode ser invocado normalmente. Na sua Main, com 3 Filhotes de Brasa, é invocado da mão: os Filhotes se fundem como materiais e ele ganha +300 ATK por Filhote.",
+          "implemented": true
+        }
+      ],
+      "image": {
+        "src": "assets/cards/dragao-brasa.svg",
+        "alt": "Dragão Brasa"
+      }
+    },
     {
       "id": "draconato-kaelthar",
       "name": "Draconato Kaelthar",
       "rarity": "epica",
       "kind": "monster",
+      "level": 7,
       "atk": 2400,
       "def": 2000,
       "tags": [
@@ -744,9 +770,6 @@
           "implemented": true
         }
       ],
-      "todo": [
-        "Nível não consta no GDD v0.2."
-      ],
       "image": {
         "src": "assets/cards/draconato-kaelthar.svg",
         "alt": "Draconato Kaelthar"
@@ -757,6 +780,7 @@
       "name": "Ceifador Carmesim",
       "rarity": "epica",
       "kind": "monster",
+      "level": 6,
       "atk": 2300,
       "def": 1500,
       "tags": [
@@ -778,13 +802,1071 @@
           "implemented": false
         }
       ],
-      "todo": [
-        "Nível não consta no GDD v0.2."
-      ],
       "image": {
         "src": "assets/cards/ceifador-carmesim.svg",
         "alt": "Ceifador Carmesim"
       }
+    },
+    {
+      "id": "arvore-sentinela",
+      "name": "Árvore-Sentinela",
+      "rarity": "rara",
+      "kind": "tower",
+      "def": 1800,
+      "effects": [
+        {
+          "text": "Seus Elfos ganham +200 ATK.",
+          "implemented": true
+        }
+      ],
+      "image": {
+        "src": "assets/cards/arvore-sentinela.svg",
+        "alt": "Árvore-Sentinela"
+      }
+    },
+    {
+      "id": "fortaleza-da-montanha",
+      "name": "Fortaleza da Montanha",
+      "rarity": "rara",
+      "kind": "tower",
+      "def": 2600,
+      "effects": [
+        {
+          "text": "Seus Anões ganham +200 DEF.",
+          "implemented": true
+        }
+      ],
+      "image": {
+        "src": "assets/cards/fortaleza-da-montanha.svg",
+        "alt": "Fortaleza da Montanha"
+      }
+    },
+    {
+      "id": "batedora-da-folhagem",
+      "name": "Batedora da Folhagem",
+      "rarity": "comum",
+      "kind": "monster",
+      "level": 2,
+      "atk": 1000,
+      "def": 600,
+      "tags": [
+        "ELF",
+        "ARCHER"
+      ],
+      "class": "ARCHER",
+      "keywords": [],
+      "effects": [
+        {
+          "text": "Ao ser invocada: a Torre inimiga perde 300 DEF até o fim do turno.",
+          "implemented": true
+        }
+      ],
+      "image": {
+        "src": "assets/cards/batedora-da-folhagem.svg",
+        "alt": "Batedora da Folhagem"
+      }
+    },
+    {
+      "id": "sentinela-do-bosque",
+      "name": "Sentinela do Bosque",
+      "rarity": "comum",
+      "kind": "monster",
+      "level": 3,
+      "atk": 900,
+      "def": 1500,
+      "tags": [
+        "ELF",
+        "WARRIOR"
+      ],
+      "class": "WARRIOR",
+      "keywords": [
+        "provocar"
+      ],
+      "effects": [
+        {
+          "text": "Provocar.",
+          "implemented": true
+        }
+      ],
+      "image": {
+        "src": "assets/cards/sentinela-do-bosque.svg",
+        "alt": "Sentinela do Bosque"
+      }
+    },
+    {
+      "id": "lamina-do-crepusculo",
+      "name": "Lâmina do Crepúsculo",
+      "rarity": "incomum",
+      "kind": "monster",
+      "level": 3,
+      "atk": 1300,
+      "def": 700,
+      "tags": [
+        "ELF",
+        "ASSASSIN"
+      ],
+      "class": "ASSASSIN",
+      "keywords": [
+        "impeto"
+      ],
+      "effects": [
+        {
+          "text": "Ímpeto.",
+          "implemented": true
+        }
+      ],
+      "image": {
+        "src": "assets/cards/lamina-do-crepusculo.svg",
+        "alt": "Lâmina do Crepúsculo"
+      }
+    },
+    {
+      "id": "oraculo-das-copas",
+      "name": "Oráculo das Copas",
+      "rarity": "incomum",
+      "kind": "monster",
+      "level": 4,
+      "atk": 1300,
+      "def": 1100,
+      "tags": [
+        "ELF",
+        "MAGE"
+      ],
+      "class": "MAGE",
+      "keywords": [],
+      "effects": [
+        {
+          "text": "Ao ser invocado: compre 1 carta.",
+          "implemented": true
+        }
+      ],
+      "image": {
+        "src": "assets/cards/oraculo-das-copas.svg",
+        "alt": "Oráculo das Copas"
+      }
+    },
+    {
+      "id": "arqueira-mor-sylwen",
+      "name": "Arqueira-Mor Sylwen",
+      "rarity": "epica",
+      "kind": "monster",
+      "level": 6,
+      "atk": 2200,
+      "def": 1600,
+      "tags": [
+        "ELF",
+        "ARCHER"
+      ],
+      "class": "ARCHER",
+      "keywords": [
+        "ataqueTorre"
+      ],
+      "effects": [
+        {
+          "text": "Pode atacar a Torre inimiga mesmo havendo monstros inimigos. Os outros Elfos Arqueiros que você controla ganham +200 ATK.",
+          "implemented": true
+        }
+      ],
+      "image": {
+        "src": "assets/cards/arqueira-mor-sylwen.svg",
+        "alt": "Arqueira-Mor Sylwen"
+      }
+    },
+    {
+      "id": "mineiro-da-forja-funda",
+      "name": "Mineiro da Forja Funda",
+      "rarity": "comum",
+      "kind": "monster",
+      "level": 2,
+      "atk": 800,
+      "def": 1300,
+      "tags": [
+        "DWARF",
+        "WARRIOR"
+      ],
+      "class": "WARRIOR",
+      "keywords": [],
+      "effects": [],
+      "flavor": "Desce onde a forja não esfria e sobe com o ferro ainda quente.",
+      "image": {
+        "src": "assets/cards/mineiro-da-forja-funda.svg",
+        "alt": "Mineiro da Forja Funda"
+      }
+    },
+    {
+      "id": "besteiro-de-pedra",
+      "name": "Besteiro de Pedra",
+      "rarity": "comum",
+      "kind": "monster",
+      "level": 3,
+      "atk": 1200,
+      "def": 1000,
+      "tags": [
+        "DWARF",
+        "ARCHER"
+      ],
+      "class": "ARCHER",
+      "keywords": [],
+      "effects": [
+        {
+          "text": "Ao ser invocado: a Torre inimiga perde 400 DEF até o fim do turno.",
+          "implemented": true
+        }
+      ],
+      "image": {
+        "src": "assets/cards/besteiro-de-pedra.svg",
+        "alt": "Besteiro de Pedra"
+      }
+    },
+    {
+      "id": "escudo-de-bigorna",
+      "name": "Escudo de Bigorna",
+      "rarity": "incomum",
+      "kind": "monster",
+      "level": 4,
+      "atk": 1000,
+      "def": 1800,
+      "tags": [
+        "DWARF",
+        "WARRIOR"
+      ],
+      "class": "WARRIOR",
+      "keywords": [
+        "provocar"
+      ],
+      "effects": [
+        {
+          "text": "Provocar.",
+          "implemented": true
+        }
+      ],
+      "image": {
+        "src": "assets/cards/escudo-de-bigorna.svg",
+        "alt": "Escudo de Bigorna"
+      }
+    },
+    {
+      "id": "sacerdote-das-runas",
+      "name": "Sacerdote das Runas",
+      "rarity": "incomum",
+      "kind": "monster",
+      "level": 4,
+      "atk": 900,
+      "def": 1500,
+      "tags": [
+        "DWARF",
+        "CLERIC"
+      ],
+      "class": "CLERIC",
+      "keywords": [],
+      "effects": [
+        {
+          "text": "Enquanto estiver em campo, sua Torre ganha +300 DEF.",
+          "implemented": true
+        }
+      ],
+      "image": {
+        "src": "assets/cards/sacerdote-das-runas.svg",
+        "alt": "Sacerdote das Runas"
+      }
+    },
+    {
+      "id": "rei-ferreiro-thorvak",
+      "name": "Rei-Ferreiro Thorvak",
+      "rarity": "epica",
+      "kind": "monster",
+      "level": 7,
+      "atk": 2400,
+      "def": 2800,
+      "tags": [
+        "DWARF",
+        "WARRIOR"
+      ],
+      "class": "WARRIOR",
+      "keywords": [
+        "provocar"
+      ],
+      "effects": [
+        {
+          "text": "Provocar. Os outros Anões que você controla ganham +300 DEF.",
+          "implemented": true
+        }
+      ],
+      "image": {
+        "src": "assets/cards/rei-ferreiro-thorvak.svg",
+        "alt": "Rei-Ferreiro Thorvak"
+      }
+    },
+    {
+      "id": "querubim-vigia",
+      "name": "Querubim Vigia",
+      "rarity": "comum",
+      "kind": "monster",
+      "level": 2,
+      "atk": 700,
+      "def": 1100,
+      "tags": [
+        "ANGEL",
+        "CLERIC"
+      ],
+      "class": "CLERIC",
+      "keywords": [],
+      "effects": [
+        {
+          "text": "Ao ser invocado: você recupera 300 HP.",
+          "implemented": true
+        }
+      ],
+      "image": {
+        "src": "assets/cards/querubim-vigia.svg",
+        "alt": "Querubim Vigia"
+      }
+    },
+    {
+      "id": "guardiao-alado",
+      "name": "Guardião Alado",
+      "rarity": "comum",
+      "kind": "monster",
+      "level": 3,
+      "atk": 1000,
+      "def": 1400,
+      "tags": [
+        "ANGEL",
+        "WARRIOR"
+      ],
+      "class": "WARRIOR",
+      "keywords": [
+        "provocar"
+      ],
+      "effects": [
+        {
+          "text": "Provocar.",
+          "implemented": true
+        }
+      ],
+      "image": {
+        "src": "assets/cards/guardiao-alado.svg",
+        "alt": "Guardião Alado"
+      }
+    },
+    {
+      "id": "mensageira-da-aurora",
+      "name": "Mensageira da Aurora",
+      "rarity": "incomum",
+      "kind": "monster",
+      "level": 4,
+      "atk": 1200,
+      "def": 1200,
+      "tags": [
+        "ANGEL",
+        "MAGE"
+      ],
+      "class": "MAGE",
+      "keywords": [],
+      "effects": [
+        {
+          "text": "Ao ser invocada: compre 1 carta.",
+          "implemented": true
+        }
+      ],
+      "image": {
+        "src": "assets/cards/mensageira-da-aurora.svg",
+        "alt": "Mensageira da Aurora"
+      }
+    },
+    {
+      "id": "arqueira-celeste",
+      "name": "Arqueira Celeste",
+      "rarity": "incomum",
+      "kind": "monster",
+      "level": 4,
+      "atk": 1500,
+      "def": 1000,
+      "tags": [
+        "ANGEL",
+        "ARCHER"
+      ],
+      "class": "ARCHER",
+      "keywords": [],
+      "effects": [
+        {
+          "text": "Ao ser invocada: a Torre inimiga perde 500 DEF até o fim do turno.",
+          "implemented": true
+        }
+      ],
+      "image": {
+        "src": "assets/cards/arqueira-celeste.svg",
+        "alt": "Arqueira Celeste"
+      }
+    },
+    {
+      "id": "serafim-justiceiro",
+      "name": "Serafim Justiceiro",
+      "rarity": "epica",
+      "kind": "monster",
+      "level": 6,
+      "atk": 2300,
+      "def": 1900,
+      "tags": [
+        "ANGEL",
+        "WARRIOR"
+      ],
+      "class": "WARRIOR",
+      "keywords": [
+        "perfurar"
+      ],
+      "effects": [
+        {
+          "text": "Perfurar. 1x por turno, na sua Main: você recupera 500 HP.",
+          "implemented": true
+        }
+      ],
+      "image": {
+        "src": "assets/cards/serafim-justiceiro.svg",
+        "alt": "Serafim Justiceiro"
+      }
+    },
+    {
+      "id": "engrenagem-sentinela",
+      "name": "Engrenagem Sentinela",
+      "rarity": "comum",
+      "kind": "monster",
+      "level": 1,
+      "atk": 600,
+      "def": 1200,
+      "tags": [
+        "AUTOMATON",
+        "WARRIOR"
+      ],
+      "class": "WARRIOR",
+      "keywords": [],
+      "effects": [],
+      "flavor": "Gira no mesmo lugar há anos, e ainda não perdeu o compasso.",
+      "image": {
+        "src": "assets/cards/engrenagem-sentinela.svg",
+        "alt": "Engrenagem Sentinela"
+      }
+    },
+    {
+      "id": "torreta-mecanica",
+      "name": "Torreta Mecânica",
+      "rarity": "comum",
+      "kind": "monster",
+      "level": 3,
+      "atk": 1200,
+      "def": 900,
+      "tags": [
+        "AUTOMATON",
+        "ARCHER"
+      ],
+      "class": "ARCHER",
+      "keywords": [],
+      "effects": [
+        {
+          "text": "Ao ser invocada: a Torre inimiga perde 300 DEF até o fim do turno.",
+          "implemented": true
+        }
+      ],
+      "image": {
+        "src": "assets/cards/torreta-mecanica.svg",
+        "alt": "Torreta Mecânica"
+      }
+    },
+    {
+      "id": "calculista-de-cobre",
+      "name": "Calculista de Cobre",
+      "rarity": "incomum",
+      "kind": "monster",
+      "level": 3,
+      "atk": 900,
+      "def": 1200,
+      "tags": [
+        "AUTOMATON",
+        "MAGE"
+      ],
+      "class": "MAGE",
+      "keywords": [],
+      "effects": [
+        {
+          "text": "Ao ser invocado: se você controla outro Autômato, compre 1 carta.",
+          "implemented": true
+        }
+      ],
+      "image": {
+        "src": "assets/cards/calculista-de-cobre.svg",
+        "alt": "Calculista de Cobre"
+      }
+    },
+    {
+      "id": "golem-de-latao",
+      "name": "Golem de Latão",
+      "rarity": "incomum",
+      "kind": "monster",
+      "level": 4,
+      "atk": 1400,
+      "def": 1700,
+      "tags": [
+        "AUTOMATON",
+        "WARRIOR"
+      ],
+      "class": "WARRIOR",
+      "keywords": [
+        "provocar"
+      ],
+      "effects": [
+        {
+          "text": "Provocar.",
+          "implemented": true
+        }
+      ],
+      "image": {
+        "src": "assets/cards/golem-de-latao.svg",
+        "alt": "Golem de Latão"
+      }
+    },
+    {
+      "id": "colosso-de-aco",
+      "name": "Colosso de Aço",
+      "rarity": "epica",
+      "kind": "monster",
+      "level": 7,
+      "atk": 2500,
+      "def": 2700,
+      "tags": [
+        "AUTOMATON",
+        "WARRIOR"
+      ],
+      "class": "WARRIOR",
+      "keywords": [],
+      "effects": [
+        {
+          "text": "Ganha +200 ATK por cada outro Autômato que você controla (máx. +600).",
+          "implemented": true
+        }
+      ],
+      "image": {
+        "src": "assets/cards/colosso-de-aco.svg",
+        "alt": "Colosso de Aço"
+      }
+    },
+    {
+      "id": "lobo-da-estepe",
+      "name": "Lobo da Estepe",
+      "rarity": "comum",
+      "kind": "monster",
+      "level": 2,
+      "atk": 1100,
+      "def": 500,
+      "tags": [
+        "BEAST",
+        "ASSASSIN"
+      ],
+      "class": "ASSASSIN",
+      "keywords": [
+        "impeto"
+      ],
+      "effects": [
+        {
+          "text": "Ímpeto.",
+          "implemented": true
+        }
+      ],
+      "image": {
+        "src": "assets/cards/lobo-da-estepe.svg",
+        "alt": "Lobo da Estepe"
+      }
+    },
+    {
+      "id": "xama-coruja",
+      "name": "Xamã-Coruja",
+      "rarity": "comum",
+      "kind": "monster",
+      "level": 3,
+      "atk": 800,
+      "def": 1200,
+      "tags": [
+        "BEAST",
+        "CLERIC"
+      ],
+      "class": "CLERIC",
+      "keywords": [],
+      "effects": [
+        {
+          "text": "1x por turno, na sua Main: você recupera 300 HP.",
+          "implemented": true
+        }
+      ],
+      "image": {
+        "src": "assets/cards/xama-coruja.svg",
+        "alt": "Xamã-Coruja"
+      }
+    },
+    {
+      "id": "javali-encouracado",
+      "name": "Javali Encouraçado",
+      "rarity": "comum",
+      "kind": "monster",
+      "level": 3,
+      "atk": 1200,
+      "def": 1300,
+      "tags": [
+        "BEAST",
+        "WARRIOR"
+      ],
+      "class": "WARRIOR",
+      "keywords": [
+        "perfurar"
+      ],
+      "effects": [
+        {
+          "text": "Perfurar.",
+          "implemented": true
+        }
+      ],
+      "image": {
+        "src": "assets/cards/javali-encouracado.svg",
+        "alt": "Javali Encouraçado"
+      }
+    },
+    {
+      "id": "pantera-das-sombras",
+      "name": "Pantera das Sombras",
+      "rarity": "incomum",
+      "kind": "monster",
+      "level": 4,
+      "atk": 1600,
+      "def": 800,
+      "tags": [
+        "BEAST",
+        "ASSASSIN"
+      ],
+      "class": "ASSASSIN",
+      "keywords": [
+        "impeto"
+      ],
+      "effects": [
+        {
+          "text": "Ímpeto.",
+          "implemented": true
+        }
+      ],
+      "image": {
+        "src": "assets/cards/pantera-das-sombras.svg",
+        "alt": "Pantera das Sombras"
+      }
+    },
+    {
+      "id": "alfa-da-matilha",
+      "name": "Alfa da Matilha",
+      "rarity": "epica",
+      "kind": "monster",
+      "level": 6,
+      "atk": 2200,
+      "def": 1500,
+      "tags": [
+        "BEAST",
+        "WARRIOR"
+      ],
+      "class": "WARRIOR",
+      "keywords": [],
+      "effects": [
+        {
+          "text": "As outras Bestas que você controla ganham +200 ATK e Ímpeto.",
+          "implemented": true
+        }
+      ],
+      "image": {
+        "src": "assets/cards/alfa-da-matilha.svg",
+        "alt": "Alfa da Matilha"
+      }
+    },
+    {
+      "id": "fagulha-viva",
+      "name": "Fagulha Viva",
+      "rarity": "comum",
+      "kind": "monster",
+      "level": 2,
+      "atk": 1000,
+      "def": 600,
+      "tags": [
+        "ELEMENTAL",
+        "ASSASSIN"
+      ],
+      "class": "ASSASSIN",
+      "keywords": [],
+      "effects": [
+        {
+          "text": "Ao ser invocada: o jogador oponente perde 200 HP.",
+          "implemented": true
+        }
+      ],
+      "image": {
+        "src": "assets/cards/fagulha-viva.svg",
+        "alt": "Fagulha Viva"
+      }
+    },
+    {
+      "id": "muralha-de-rocha",
+      "name": "Muralha de Rocha",
+      "rarity": "comum",
+      "kind": "monster",
+      "level": 3,
+      "atk": 700,
+      "def": 1700,
+      "tags": [
+        "ELEMENTAL",
+        "WARRIOR"
+      ],
+      "class": "WARRIOR",
+      "keywords": [
+        "provocar"
+      ],
+      "effects": [
+        {
+          "text": "Provocar.",
+          "implemented": true
+        }
+      ],
+      "image": {
+        "src": "assets/cards/muralha-de-rocha.svg",
+        "alt": "Muralha de Rocha"
+      }
+    },
+    {
+      "id": "espirito-da-nevoa",
+      "name": "Espírito da Névoa",
+      "rarity": "incomum",
+      "kind": "monster",
+      "level": 3,
+      "atk": 1100,
+      "def": 1100,
+      "tags": [
+        "ELEMENTAL",
+        "MAGE"
+      ],
+      "class": "MAGE",
+      "keywords": [],
+      "effects": [
+        {
+          "text": "Ao ser invocado: 1 monstro inimigo perde 400 ATK até o fim do turno.",
+          "implemented": true
+        }
+      ],
+      "image": {
+        "src": "assets/cards/espirito-da-nevoa.svg",
+        "alt": "Espírito da Névoa"
+      }
+    },
+    {
+      "id": "ondina-da-fonte",
+      "name": "Ondina da Fonte",
+      "rarity": "incomum",
+      "kind": "monster",
+      "level": 4,
+      "atk": 1000,
+      "def": 1500,
+      "tags": [
+        "ELEMENTAL",
+        "CLERIC"
+      ],
+      "class": "CLERIC",
+      "keywords": [],
+      "effects": [
+        {
+          "text": "1x por turno, na sua Main: você recupera 400 HP.",
+          "implemented": true
+        }
+      ],
+      "image": {
+        "src": "assets/cards/ondina-da-fonte.svg",
+        "alt": "Ondina da Fonte"
+      }
+    },
+    {
+      "id": "tita-da-tempestade",
+      "name": "Titã da Tempestade",
+      "rarity": "epica",
+      "kind": "monster",
+      "level": 7,
+      "atk": 2600,
+      "def": 2200,
+      "tags": [
+        "ELEMENTAL",
+        "MAGE"
+      ],
+      "class": "MAGE",
+      "keywords": [],
+      "effects": [
+        {
+          "text": "Ao ser invocado: todos os monstros inimigos perdem 500 ATK até o fim do turno.",
+          "implemented": true
+        }
+      ],
+      "image": {
+        "src": "assets/cards/tita-da-tempestade.svg",
+        "alt": "Titã da Tempestade"
+      }
+    },
+    {
+      "id": "enguia-abissal",
+      "name": "Enguia Abissal",
+      "rarity": "comum",
+      "kind": "monster",
+      "level": 2,
+      "atk": 1000,
+      "def": 500,
+      "tags": [
+        "ABYSSAL",
+        "ASSASSIN"
+      ],
+      "class": "ASSASSIN",
+      "keywords": [
+        "impeto"
+      ],
+      "effects": [
+        {
+          "text": "Ímpeto.",
+          "implemented": true
+        }
+      ],
+      "image": {
+        "src": "assets/cards/enguia-abissal.svg",
+        "alt": "Enguia Abissal"
+      }
+    },
+    {
+      "id": "guardiao-das-fossas",
+      "name": "Guardião das Fossas",
+      "rarity": "comum",
+      "kind": "monster",
+      "level": 3,
+      "atk": 900,
+      "def": 1500,
+      "tags": [
+        "ABYSSAL",
+        "WARRIOR"
+      ],
+      "class": "WARRIOR",
+      "keywords": [
+        "provocar"
+      ],
+      "effects": [
+        {
+          "text": "Provocar.",
+          "implemented": true
+        }
+      ],
+      "image": {
+        "src": "assets/cards/guardiao-das-fossas.svg",
+        "alt": "Guardião das Fossas"
+      }
+    },
+    {
+      "id": "bruxa-das-mares",
+      "name": "Bruxa das Marés",
+      "rarity": "incomum",
+      "kind": "monster",
+      "level": 4,
+      "atk": 1300,
+      "def": 1100,
+      "tags": [
+        "ABYSSAL",
+        "MAGE"
+      ],
+      "class": "MAGE",
+      "keywords": [],
+      "effects": [
+        {
+          "text": "Ao ser invocada: 1 monstro inimigo perde 500 ATK até o fim do turno.",
+          "implemented": true
+        }
+      ],
+      "image": {
+        "src": "assets/cards/bruxa-das-mares.svg",
+        "alt": "Bruxa das Marés"
+      }
+    },
+    {
+      "id": "assassino-abissal",
+      "name": "Assassino Abissal",
+      "rarity": "incomum",
+      "kind": "monster",
+      "level": 4,
+      "atk": 1600,
+      "def": 700,
+      "tags": [
+        "ABYSSAL",
+        "ASSASSIN"
+      ],
+      "class": "ASSASSIN",
+      "keywords": [
+        "impeto"
+      ],
+      "effects": [
+        {
+          "text": "Ímpeto. Quando destrói um monstro em batalha: o jogador oponente perde 300 HP.",
+          "implemented": true
+        }
+      ],
+      "image": {
+        "src": "assets/cards/assassino-abissal.svg",
+        "alt": "Assassino Abissal"
+      }
+    },
+    {
+      "id": "leviatan-faminto",
+      "name": "Leviatã Faminto",
+      "rarity": "epica",
+      "kind": "monster",
+      "level": 7,
+      "atk": 2700,
+      "def": 2100,
+      "tags": [
+        "ABYSSAL",
+        "WARRIOR"
+      ],
+      "class": "WARRIOR",
+      "keywords": [
+        "perfurar"
+      ],
+      "effects": [
+        {
+          "text": "Perfurar.",
+          "implemented": true
+        }
+      ],
+      "image": {
+        "src": "assets/cards/leviatan-faminto.svg",
+        "alt": "Leviatã Faminto"
+      }
+    },
+    {
+      "id": "larva-operaria",
+      "name": "Larva Operária",
+      "rarity": "comum",
+      "kind": "monster",
+      "level": 1,
+      "atk": 500,
+      "def": 500,
+      "tags": [
+        "SWARM",
+        "WARRIOR"
+      ],
+      "class": "WARRIOR",
+      "keywords": [],
+      "effects": [
+        {
+          "text": "Ganha +100 ATK por cada outro Enxame que você controla.",
+          "implemented": true
+        }
+      ],
+      "image": {
+        "src": "assets/cards/larva-operaria.svg",
+        "alt": "Larva Operária"
+      }
+    },
+    {
+      "id": "zangao-picador",
+      "name": "Zangão Picador",
+      "rarity": "comum",
+      "kind": "monster",
+      "level": 2,
+      "atk": 900,
+      "def": 400,
+      "tags": [
+        "SWARM",
+        "ASSASSIN"
+      ],
+      "class": "ASSASSIN",
+      "keywords": [
+        "impeto"
+      ],
+      "effects": [
+        {
+          "text": "Ímpeto.",
+          "implemented": true
+        }
+      ],
+      "image": {
+        "src": "assets/cards/zangao-picador.svg",
+        "alt": "Zangão Picador"
+      }
+    },
+    {
+      "id": "vespa-atiradora",
+      "name": "Vespa Atiradora",
+      "rarity": "comum",
+      "kind": "monster",
+      "level": 3,
+      "atk": 1100,
+      "def": 700,
+      "tags": [
+        "SWARM",
+        "ARCHER"
+      ],
+      "class": "ARCHER",
+      "keywords": [],
+      "effects": [
+        {
+          "text": "Ao ser invocada: a Torre inimiga perde 300 DEF até o fim do turno.",
+          "implemented": true
+        }
+      ],
+      "image": {
+        "src": "assets/cards/vespa-atiradora.svg",
+        "alt": "Vespa Atiradora"
+      }
+    },
+    {
+      "id": "zeladora-da-colmeia",
+      "name": "Zeladora da Colmeia",
+      "rarity": "incomum",
+      "kind": "monster",
+      "level": 3,
+      "atk": 600,
+      "def": 1200,
+      "tags": [
+        "SWARM",
+        "CLERIC"
+      ],
+      "class": "CLERIC",
+      "keywords": [],
+      "effects": [
+        {
+          "text": "Ao ser invocada: você recupera 200 HP por cada Enxame que você controla.",
+          "implemented": true
+        }
+      ],
+      "image": {
+        "src": "assets/cards/zeladora-da-colmeia.svg",
+        "alt": "Zeladora da Colmeia"
+      }
+    },
+    {
+      "id": "rainha-da-colmeia",
+      "name": "Rainha da Colmeia",
+      "rarity": "epica",
+      "kind": "monster",
+      "level": 6,
+      "atk": 2000,
+      "def": 1800,
+      "tags": [
+        "SWARM",
+        "MAGE"
+      ],
+      "class": "MAGE",
+      "keywords": [],
+      "effects": [
+        {
+          "text": "Os outros Enxames que você controla ganham +200 ATK.",
+          "implemented": true
+        }
+      ],
+      "image": {
+        "src": "assets/cards/rainha-da-colmeia.svg",
+        "alt": "Rainha da Colmeia"
+      }
     }
-  ]
+  ],
+  "pending": []
 }

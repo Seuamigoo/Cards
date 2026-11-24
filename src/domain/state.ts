@@ -14,6 +14,7 @@ interface CardBase {
   readonly name: string;
   readonly rarity: CardRarity;
   readonly image?: CardImage;
+  readonly flavor?: string;
 }
 
 export type BattlePosition = "attack" | "defense";
@@ -37,6 +38,11 @@ export interface MonsterInstance {
   readonly attackedThisTurn: boolean;
   /** Gancho do Aríete de Cerco: permite atacar a Torre com monstros inimigos em campo. */
   readonly siege?: boolean;
+  /** Cartas fundidas que saem junto com este monstro. */
+  readonly materials?: readonly MonsterCard[];
+  /** Modificador de ATK até o fim do turno. */
+  readonly tempAtk?: number;
+  readonly activatedThisTurn?: boolean;
 }
 
 export interface SpellCard extends CardBase {
@@ -63,6 +69,8 @@ export type SpellTrapCard = SpellCard | TrapCard;
 export interface TowerInstance {
   readonly card: TowerCard;
   readonly defBonus: number;
+  /** Modificador de DEF até o fim do turno. A DEF impressa não muda. */
+  readonly tempDef?: number;
 }
 
 export interface PlayerState {
@@ -80,6 +88,7 @@ export interface PlayerState {
   readonly normalSummonedThisTurn: boolean;
   readonly lineageDeck: readonly MonsterCard[];
   readonly convergedThisTurn: boolean;
+  readonly brasaFusedThisTurn?: boolean;
 }
 
 export type Phase = "draw" | "main1" | "battle" | "main2" | "end";
@@ -123,11 +132,12 @@ export function copyCard<T extends Card>(card: T): T {
         def: card.def,
         tags: [...card.tags],
         keywords: [...card.keywords],
+        ...flavorPart(card),
       } as unknown as T;
     case "spell":
-      return { id: card.id, name: card.name, rarity: card.rarity, ...image, kind: "spell" } as T;
+      return { id: card.id, name: card.name, rarity: card.rarity, ...image, ...flavorPart(card), kind: "spell" } as T;
     case "trap":
-      return { id: card.id, name: card.name, rarity: card.rarity, ...image, kind: "trap" } as T;
+      return { id: card.id, name: card.name, rarity: card.rarity, ...image, ...flavorPart(card), kind: "trap" } as T;
     case "tower":
       return {
         id: card.id,
@@ -136,9 +146,10 @@ export function copyCard<T extends Card>(card: T): T {
         ...image,
         kind: "tower",
         def: card.def,
+        ...flavorPart(card),
       } as T;
     case "biome":
-      return { id: card.id, name: card.name, rarity: card.rarity, ...image, kind: "biome" } as T;
+      return { id: card.id, name: card.name, rarity: card.rarity, ...image, ...flavorPart(card), kind: "biome" } as T;
     default: {
       const unexpected: never = card;
       throw new Error(`Carta inválida: ${String(unexpected)}.`);
@@ -260,6 +271,7 @@ function clonePlayer(player: PlayerState): PlayerState {
         : {
             card: copyCard(player.towerZone.card),
             defBonus: player.towerZone.defBonus,
+            ...(player.towerZone.tempDef !== undefined ? { tempDef: player.towerZone.tempDef } : {}),
           },
     biomeZone: player.biomeZone === null ? null : copyCard(player.biomeZone),
     graveyard: player.graveyard.map((card) => copyCard(card)),
@@ -276,7 +288,16 @@ function copyMonsterInstance(slot: MonsterInstance): MonsterInstance {
     changedPositionThisTurn: slot.changedPositionThisTurn,
     attackedThisTurn: slot.attackedThisTurn,
     ...(slot.siege === true ? { siege: true } : {}),
+    ...(slot.materials !== undefined && slot.materials.length > 0
+      ? { materials: slot.materials.map((card) => copyCard(card)) }
+      : {}),
+    ...(slot.tempAtk !== undefined ? { tempAtk: slot.tempAtk } : {}),
+    ...(slot.activatedThisTurn === true ? { activatedThisTurn: true } : {}),
   };
+}
+
+function flavorPart(card: { readonly flavor?: string }): { readonly flavor?: string } {
+  return card.flavor !== undefined ? { flavor: card.flavor } : {};
 }
 
 function emptySlots<T>(size: number): readonly (T | null)[] {

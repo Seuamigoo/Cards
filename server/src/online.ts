@@ -253,6 +253,8 @@ function isAction(value: unknown): value is Action {
     case "playBiome":
     case "changePosition":
     case "converge":
+    case "fuseBrasa":
+    case "activate":
     case "attack":
       return true;
     default:
