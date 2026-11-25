@@ -3,7 +3,7 @@ import { scriptOf } from "./cardScripts";
 import { effectiveAttack, effectiveDefense } from "./effects";
 import type { CardOrigin } from "./eventBus";
 import { hasKeyword } from "./rules";
-import type { Action, ActionResult } from "./actions";
+import type { Action, ActionResult, SpellTrapTarget } from "./actions";
 import { resolveConfig } from "./config";
 import type { GameConfig, GameMode } from "./config";
 import { EventBus } from "./eventBus";
@@ -149,6 +149,10 @@ export class GameMatch {
         return;
       case "setSpellTrap":
         this.publishSpellTrap(before, after);
+        return;
+      case "activateSpellTrap":
+        this.publishSpellActivation(before, action.zoneIndex, action.targets);
+        this.publishSentCards(before, after);
         return;
       case "summonTower":
         this.publishTowerReplacement(before, after);
@@ -404,6 +408,26 @@ export class GameMatch {
         instanceId: next.card.instanceId ?? "",
         cardId: next.card.id,
       });
+    });
+  }
+
+  private publishSpellActivation(
+    before: BoardState,
+    zoneIndex: number,
+    targets: readonly SpellTrapTarget[] | undefined,
+  ): void {
+    const playerIndex = before.activePlayerIndex;
+    const card = before.players[playerIndex].spellTrapZone[zoneIndex];
+    if (card === null || card === undefined) {
+      return;
+    }
+    this.events.emit("spelltrap:activated", {
+      playerIndex,
+      zoneIndex,
+      instanceId: card.instanceId ?? "",
+      cardId: card.id,
+      owner: playerIndex,
+      ...(targets !== undefined && targets.length > 0 ? { targets } : {}),
     });
   }
 

@@ -53,6 +53,11 @@ export interface MonsterInstance {
   /** Modificador de ATK até o fim do turno. */
   readonly tempAtk?: number;
   readonly activatedThisTurn?: boolean;
+  /**
+   * A v0.2 entra com o monstro virado para cima. O gancho existe para esconder
+   * o cardId na visão do oponente se uma posição virada for usada.
+   */
+  readonly faceDown?: boolean;
 }
 
 export interface SpellCard extends CardBase {
@@ -306,6 +311,7 @@ function copyMonsterInstance(slot: MonsterInstance): MonsterInstance {
       : {}),
     ...(slot.tempAtk !== undefined ? { tempAtk: slot.tempAtk } : {}),
     ...(slot.activatedThisTurn === true ? { activatedThisTurn: true } : {}),
+    ...(slot.faceDown === true ? { faceDown: true } : {}),
   };
 }
 

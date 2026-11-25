@@ -249,6 +249,7 @@ function isAction(value: unknown): value is Action {
     case "advancePhase":
     case "summonMonster":
     case "setSpellTrap":
+    case "activateSpellTrap":
     case "summonTower":
     case "playBiome":
     case "changePosition":

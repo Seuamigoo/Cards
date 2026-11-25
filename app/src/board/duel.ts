@@ -219,6 +219,8 @@ export function actionKey(action: Action): string {
       return `position:${action.zoneIndex}`;
     case "setSpellTrap":
       return `set:${action.handIndex}:${action.zoneIndex}`;
+    case "activateSpellTrap":
+      return `activate-spell:${action.zoneIndex}`;
     case "summonTower":
       return `tower:${action.handIndex}`;
     case "playBiome":
