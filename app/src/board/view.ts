@@ -8,6 +8,8 @@ import { faceCopy } from "./catalogText";
 import { duelOffers } from "./duel";
 import type { DuelInput, DuelOffers, DuelViewState, SlotCue, SlotRole, ZoneCue } from "./duel";
 import { renderCardFace } from "./face";
+import { fxClass } from "./fx";
+import type { BoardFx } from "./fx";
 
 export function renderDuel(options: {
   readonly state: BoardState;
@@ -15,9 +17,14 @@ export function renderDuel(options: {
   readonly view: DuelViewState;
   readonly texts: ReadonlyMap<string, string>;
   readonly error: string | null;
+  readonly fx?: readonly BoardFx[];
+  readonly onMode?: (mode: string) => void;
+  readonly modeId?: string;
+  readonly onBack?: () => void;
   readonly onInput: (input: DuelInput) => void;
 }): HTMLElement {
   const { state, viewer, view, texts, error, onInput } = options;
+  const fx = options.fx ?? [];
   const offers = duelOffers(state, viewer, view.selection);
   const root = document.createElement("section");
   root.className = "duel";
@@ -29,30 +36,16 @@ export function renderDuel(options: {
   heading.className = "sr-only";
   heading.textContent = "Duelo";
   const status = document.createElement("p");
-  status.className = "phase-bar";
+  status.className = "sr-only";
   status.textContent = offers.status;
   const summary = document.createElement("p");
   summary.className = "sr-only";
   summary.textContent = `Campo com ${state.config.monsterSlots} slots de monstro e ${state.config.spellTrapSlots} slots de magia ou armadilha.`;
-  const dock = document.createElement("div");
-  dock.className = "duel-dock";
-  const hint = document.createElement("p");
-  hint.className = "duel-hint";
-  hint.setAttribute("aria-live", "polite");
-  hint.textContent = offers.hint;
-  dock.append(hint);
-  if (error !== null && error.length > 0) {
-    const alert = document.createElement("p");
-    alert.className = "duel-error";
-    alert.setAttribute("role", "alert");
-    alert.textContent = error;
-    dock.append(alert);
-  }
-  dock.append(renderActions(offers, onInput));
-  root.append(
-    heading,
-    status,
-    summary,
+  const stage = document.createElement("div");
+  stage.className = "table-stage";
+  const plane = document.createElement("div");
+  plane.className = planeClass(state);
+  plane.append(
     renderSide({
       state,
       player: state.players[opponentOf(viewer)],
@@ -61,6 +54,7 @@ export function renderDuel(options: {
       offers,
       texts,
       view,
+      fx,
       onInput,
       opponent: true,
     }),
@@ -72,11 +66,28 @@ export function renderDuel(options: {
       offers,
       texts,
       view,
+      fx,
       onInput,
       opponent: false,
     }),
-    dock,
   );
+  stage.append(plane);
+  const handDock = document.createElement("div");
+  handDock.className = "hand-dock";
+  const hint = document.createElement("p");
+  hint.className = "duel-hint";
+  hint.setAttribute("aria-live", "polite");
+  hint.textContent = offers.hint;
+  handDock.append(hint);
+  if (error !== null && error.length > 0) {
+    const alert = document.createElement("p");
+    alert.className = "duel-error";
+    alert.setAttribute("role", "alert");
+    alert.textContent = error;
+    handDock.append(alert);
+  }
+  handDock.append(renderPositionChoice(offers, onInput), renderYourHand(state.players[viewer], viewer, view, texts, onInput));
+  root.append(renderHud(state, viewer, offers, options.onMode, options.modeId, options.onBack, onInput), heading, status, summary, stage, handDock);
   const dialog = renderDialog(state, viewer, view, texts, onInput);
   if (dialog !== null) {
     root.append(dialog);
@@ -92,51 +103,164 @@ function renderSide(options: {
   readonly offers: DuelOffers;
   readonly texts: ReadonlyMap<string, string>;
   readonly view: DuelViewState;
+  readonly fx: readonly BoardFx[];
   readonly onInput: (input: DuelInput) => void;
   readonly opponent: boolean;
 }): HTMLElement {
   const section = document.createElement("section");
   section.className = options.opponent ? "side side-opponent" : "side side-you";
   section.setAttribute("aria-label", options.opponent ? "Campo do oponente" : "Seu campo");
-  const head = renderHead(options.state, options.player, options.opponent, options.offers, options.onInput);
-  const hand = options.opponent ? renderHiddenHand(options.player.hand.length) : renderYourHand(options.player, options.playerIndex, options.view, options.texts, options.onInput);
-  const resources = renderResources(options.player, options.playerIndex, options.onInput);
+  const name = document.createElement("h2");
+  name.textContent = options.opponent ? "Oponente" : "Você";
+  const resources = renderResources(options.player, options.playerIndex, options.fx, options.onInput);
   const board = renderField(options, !options.opponent);
   if (options.opponent) {
-    section.append(head, hand, resources, board);
+    section.append(name, renderHiddenHand(options.player.hand.length), resources, board);
   } else {
-    section.append(board, resources, head, hand);
+    section.append(board, resources, name);
   }
   return section;
 }
 
-function renderHead(
+function planeClass(state: BoardState): string {
+  const ids = new Set<string>();
+  for (const player of state.players) {
+    if (player.biomeZone !== null) {
+      ids.add(player.biomeZone.id);
+    }
+  }
+  const classes = ["table-plane"];
+  if (ids.has("planicie-dourada")) {
+    classes.push("biome-planicie");
+  }
+  if (ids.has("pantano-das-lapides")) {
+    classes.push("biome-pantano");
+  }
+  if (ids.size > 0 && !ids.has("planicie-dourada") && !ids.has("pantano-das-lapides")) {
+    classes.push("biome-generic");
+  }
+  return classes.join(" ");
+}
+
+function renderHud(
   state: BoardState,
-  player: PlayerState,
-  opponent: boolean,
+  viewer: PlayerIndex,
   offers: DuelOffers,
+  onMode: ((mode: string) => void) | undefined,
+  modeId: string | undefined,
+  onBack: (() => void) | undefined,
   onInput: (input: DuelInput) => void,
 ): HTMLElement {
-  const head = document.createElement("div");
-  head.className = "side-head";
-  const title = document.createElement("h2");
-  title.textContent = opponent ? "Oponente" : "Você";
-  const hpText = `HP ${player.hp}/${state.config.playerHp}`;
-  if (opponent && offers.attackPlayer !== null) {
-    const button = document.createElement("button");
-    button.type = "button";
-    button.className = "hp hp-target";
-    button.textContent = hpText;
-    button.setAttribute("aria-label", `${offers.attackPlayer.label}. HP ${player.hp} de ${state.config.playerHp}`);
-    button.addEventListener("click", () => onInput({ type: "opponent-player" }));
-    head.append(title, button);
-  } else {
+  const hud = document.createElement("header");
+  hud.className = "hud";
+  const foe = state.players[opponentOf(viewer)];
+  const you = state.players[viewer];
+  const left = hpReadout(foe.hp, state.config.playerHp, "Oponente", offers.attackPlayer?.label ?? null, () => onInput({ type: "opponent-player" }));
+  const center = document.createElement("div");
+  center.className = "hud-center";
+  const phase = document.createElement("p");
+  phase.className = "phase-center";
+  phase.textContent = offers.status;
+  center.append(phase, renderHudActions(offers, onInput));
+  if (onMode !== undefined) {
+    center.append(renderModeSelect(onMode, modeId));
+  }
+  if (onBack !== undefined) {
+    const back = document.createElement("button");
+    back.type = "button";
+    back.className = "hud-back";
+    back.textContent = "Voltar";
+    back.addEventListener("click", onBack);
+    center.append(back);
+  }
+  const right = document.createElement("p");
+  right.className = "hp hp-you";
+  right.textContent = `Você ${you.hp}/${state.config.playerHp}`;
+  hud.append(left, center, right);
+  return hud;
+}
+
+function hpReadout(
+  current: number,
+  max: number,
+  who: string,
+  attackLabel: string | null,
+  onAttack: () => void,
+): HTMLElement {
+  const text = `${who} ${current}/${max}`;
+  if (attackLabel === null) {
     const hp = document.createElement("p");
     hp.className = "hp";
-    hp.textContent = hpText;
-    head.append(title, hp);
+    hp.textContent = text;
+    return hp;
   }
-  return head;
+  const button = document.createElement("button");
+  button.type = "button";
+  button.className = "hp hp-target";
+  button.textContent = text;
+  button.setAttribute("aria-label", `${attackLabel}. HP ${current} de ${max}`);
+  button.addEventListener("click", onAttack);
+  return button;
+}
+
+function renderHudActions(offers: DuelOffers, onInput: (input: DuelInput) => void): HTMLElement {
+  const bar = document.createElement("div");
+  bar.className = "hud-actions";
+  for (const pending of offers.pending) {
+    if (pending.action.type === "summonMonster" || pending.action.type === "fuseBrasa") {
+      continue;
+    }
+    const button = document.createElement("button");
+    button.type = "button";
+    button.textContent = pending.label;
+    button.setAttribute("aria-label", pending.label);
+    button.addEventListener("click", () => onInput({ type: "pending", id: pending.id }));
+    bar.append(button);
+  }
+  return bar;
+}
+
+function renderModeSelect(onMode: (mode: string) => void, modeId: string | undefined): HTMLSelectElement {
+  const select = document.createElement("select");
+  select.setAttribute("aria-label", "Modo do duelo");
+  const modes: readonly (readonly [string, string])[] = [
+    ["classic-easy", "Clássico fácil"],
+    ["classic-normal", "Clássico normal"],
+    ["blitz-easy", "Blitz fácil"],
+    ["blitz-normal", "Blitz normal"],
+    ["brasa", "Mesa com Dragão Brasa"],
+  ];
+  for (const [value, label] of modes) {
+    const option = document.createElement("option");
+    option.value = value;
+    option.textContent = label;
+    select.append(option);
+  }
+  if (modeId !== undefined) {
+    select.value = modeId;
+  }
+  select.addEventListener("change", () => onMode(select.value));
+  return select;
+}
+
+function renderPositionChoice(offers: DuelOffers, onInput: (input: DuelInput) => void): HTMLElement {
+  const box = document.createElement("div");
+  box.className = "position-choice";
+  const choices = offers.pending.filter((item) => item.action.type === "summonMonster" || item.action.type === "fuseBrasa");
+  if (choices.length === 0) {
+    return box;
+  }
+  box.setAttribute("role", "group");
+  box.setAttribute("aria-label", "Escolha ataque ou defesa");
+  for (const choice of choices) {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.textContent = choice.label;
+    button.setAttribute("aria-label", choice.label);
+    button.addEventListener("click", () => onInput({ type: "pending", id: choice.id }));
+    box.append(button);
+  }
+  return box;
 }
 
 function renderField(options: {
@@ -146,6 +270,7 @@ function renderField(options: {
   readonly texts: ReadonlyMap<string, string>;
   readonly onInput: (input: DuelInput) => void;
   readonly opponent: boolean;
+  readonly fx: readonly BoardFx[];
 }, spellFirst: boolean): HTMLElement {
   const scroll = document.createElement("div");
   scroll.className = "board-scroll";
@@ -157,7 +282,7 @@ function renderField(options: {
   const monsterCues = options.opponent ? options.offers.opponentMonsterSlots : options.offers.monsterSlots;
   const orderedMonsters = options.opponent ? [...monsterCues].reverse() : monsterCues;
   orderedMonsters.forEach((cue) => {
-    monsterRow.append(renderMonsterSlot(options.player, options.playerIndex, cue, options.texts, options.onInput, options.opponent));
+    monsterRow.append(renderMonsterSlot(options.player, options.playerIndex, cue, options.texts, options.fx, options.onInput, options.opponent));
   });
   const towerCue = options.opponent ? options.offers.opponentTower : options.offers.tower;
   const biomeCue = options.opponent ? options.offers.opponentBiome : options.offers.biome;
@@ -166,12 +291,14 @@ function renderField(options: {
     towerFace(options.player, options.playerIndex, options.texts),
     "Torre",
     zoneClick(towerCue, options.opponent, "tower", options.onInput),
+    !options.opponent && towerCue.role === "play" ? (handIndex) => options.onInput({ type: "drop-tower", handIndex }) : null,
   );
   const biomeZone = renderZone(
     biomeCue,
     biomeFace(options.player, options.playerIndex, options.texts),
     "Bioma",
     zoneClick(biomeCue, options.opponent, "biome", options.onInput),
+    !options.opponent && biomeCue.role === "play" ? (handIndex) => options.onInput({ type: "drop-biome", handIndex }) : null,
   );
   if (options.opponent) {
     monsters.append(biomeZone, monsterRow, towerZone);
@@ -256,6 +383,7 @@ function renderMonsterSlot(
   playerIndex: PlayerIndex,
   cue: SlotCue,
   texts: ReadonlyMap<string, string>,
+  fx: readonly BoardFx[],
   onInput: (input: DuelInput) => void,
   opponent: boolean,
 ): HTMLElement {
@@ -264,6 +392,15 @@ function renderMonsterSlot(
   slot.dataset.role = cue.role;
   const monster = player.monsterZone[cue.zoneIndex];
   const occupied = monster !== null && monster !== undefined;
+  if (occupied) {
+    const mark = fxClass(cardInstanceKey(monster.card, { player: playerIndex, zone: "monster", index: cue.zoneIndex }), fx);
+    if (mark.length > 0) {
+      slot.classList.add(mark);
+    }
+  }
+  if (!opponent && (cue.role === "summon" || cue.role === "fuse")) {
+    bindDrop(slot, (handIndex) => onInput({ type: "drop-monster", handIndex, zoneIndex: cue.zoneIndex }));
+  }
   if (!occupied) {
     slot.classList.add("is-empty");
     slot.append(emptyFace(cue.zoneIndex + 1));
@@ -290,10 +427,11 @@ function renderMonsterSlot(
   if (cue.pressed) {
     hit.setAttribute("aria-pressed", "true");
   }
-  if (!occupied) {
+  const captionText = slotCaption(cue.role);
+  if (!occupied && captionText.length > 0) {
     const caption = document.createElement("span");
     caption.className = "slot-caption";
-    caption.textContent = slotCaption(cue.role);
+    caption.textContent = captionText;
     hit.append(caption);
   }
   hit.addEventListener("click", () => {
@@ -389,6 +527,9 @@ function renderSpellSlot(
       cardInstanceKey(card, { player: playerIndex, zone: "spell", index: cue.zoneIndex }),
     ));
   }
+  if (!opponent && cue.role === "set") {
+    bindDrop(slot, (handIndex) => onInput({ type: "drop-spell", handIndex, zoneIndex: cue.zoneIndex }));
+  }
   if (cue.role === "idle" || opponent) {
     slot.setAttribute("aria-label", cue.label);
     return slot;
@@ -413,6 +554,7 @@ function renderZone(
   content: HTMLElement | null,
   emptyLabel: string,
   onClick: (() => void) | null,
+  onDrop: ((handIndex: number) => void) | null,
 ): HTMLElement {
   const zone = document.createElement("div");
   zone.className = "zone-side";
@@ -441,6 +583,9 @@ function renderZone(
   }
   hit.addEventListener("click", onClick);
   zone.append(hit);
+  if (onDrop !== null) {
+    bindDrop(zone, onDrop);
+  }
   return zone;
 }
 
@@ -498,6 +643,13 @@ function renderYourHand(
       faceCopy(card, texts),
       cardInstanceKey(card, { player: playerIndex, zone: "hand", index }),
     ));
+    button.draggable = true;
+    button.addEventListener("dragstart", (event) => {
+      event.dataTransfer?.setData("text/plain", String(index));
+      if (event.dataTransfer !== null) {
+        event.dataTransfer.effectAllowed = "move";
+      }
+    });
     button.addEventListener("click", () => onInput({ type: "hand", index }));
     row.append(button);
   });
@@ -523,37 +675,36 @@ function renderHiddenHand(count: number): HTMLElement {
   return row;
 }
 
-function renderResources(player: PlayerState, playerIndex: PlayerIndex, onInput: (input: DuelInput) => void): HTMLElement {
+function renderResources(
+  player: PlayerState,
+  playerIndex: PlayerIndex,
+  fx: readonly BoardFx[],
+  onInput: (input: DuelInput) => void,
+): HTMLElement {
   const row = document.createElement("div");
   row.className = "resources";
   const deck = document.createElement("div");
   deck.className = "pile deck-pile";
   deck.setAttribute("aria-label", `Deck, ${player.deck.length} ${noun(player.deck.length)}`);
   deck.append(pileCount(player.deck.length), pileName("Deck"));
+  const grave = document.createElement("button");
+  grave.type = "button";
+  grave.className = `pile grave-pile${pileMarked(fx, playerIndex, "graveyard") ? " fx-pile" : ""}`;
+  grave.setAttribute("aria-label", `Cemitério, ${player.graveyard.length} ${noun(player.graveyard.length)}. Ver cartas.`);
+  grave.append(pileCount(player.graveyard.length), pileName("Cemitério"));
+  grave.addEventListener("click", () => onInput({ type: "graveyard", player: playerIndex }));
   const limbo = document.createElement("button");
   limbo.type = "button";
-  limbo.className = "pile limbo-pile";
+  limbo.className = `pile limbo-pile${pileMarked(fx, playerIndex, "limbo") ? " fx-pile" : ""}`;
   limbo.setAttribute("aria-label", `Limbo, ${player.limbo.length} ${noun(player.limbo.length)}. Ver cartas.`);
   limbo.append(pileCount(player.limbo.length), pileName("Limbo"));
   limbo.addEventListener("click", () => onInput({ type: "limbo", player: playerIndex }));
-  row.append(deck, limbo);
+  row.append(deck, grave, limbo);
   return row;
 }
 
-function renderActions(offers: DuelOffers, onInput: (input: DuelInput) => void): HTMLElement {
-  const bar = document.createElement("div");
-  bar.className = "duel-actions";
-  bar.setAttribute("role", "toolbar");
-  bar.setAttribute("aria-label", "Ações");
-  for (const pending of offers.pending) {
-    const button = document.createElement("button");
-    button.type = "button";
-    button.textContent = pending.label;
-    button.setAttribute("aria-label", pending.label);
-    button.addEventListener("click", () => onInput({ type: "pending", id: pending.id }));
-    bar.append(button);
-  }
-  return bar;
+function pileMarked(fx: readonly BoardFx[], player: PlayerIndex, pile: "limbo" | "graveyard"): boolean {
+  return fx.some((item) => item.kind === "pile" && item.player === player && item.pile === pile);
 }
 
 function renderDialog(
@@ -589,6 +740,25 @@ function renderDialog(
           bandFromCard(card),
           faceCopy(card, texts),
           cardInstanceKey(card, { player: owner, zone: "limbo", index }),
+        ));
+      });
+      break;
+    }
+    case "graveyard": {
+      const owner = dialogState.player;
+      title.textContent = owner === viewer ? "Seu cemitério" : "Cemitério do oponente";
+      const cards = state.players[owner].graveyard;
+      if (cards.length === 0) {
+        const empty = document.createElement("p");
+        empty.textContent = "O cemitério não tem cartas.";
+        grid.append(empty);
+      }
+      cards.forEach((card, index) => {
+        grid.append(renderCardFace(
+          card,
+          bandFromCard(card),
+          faceCopy(card, texts),
+          cardInstanceKey(card, { player: owner, zone: "graveyard", index }),
         ));
       });
       break;
@@ -667,7 +837,7 @@ function statsText(band: NameBand): string | null {
 function slotCaption(role: SlotRole): string {
   switch (role) {
     case "summon":
-      return "Invocar";
+      return "";
     case "fuse":
       return "Fundir";
     case "tribute":
@@ -705,4 +875,27 @@ function pileName(name: string): HTMLElement {
 
 function noun(count: number): string {
   return count === 1 ? "carta" : "cartas";
+}
+
+function bindDrop(target: HTMLElement, onDrop: (handIndex: number) => void): void {
+  target.addEventListener("dragover", (event) => {
+    event.preventDefault();
+    if (event.dataTransfer !== null) {
+      event.dataTransfer.dropEffect = "move";
+    }
+    target.classList.add("is-drop");
+  });
+  target.addEventListener("dragleave", () => {
+    target.classList.remove("is-drop");
+  });
+  target.addEventListener("drop", (event) => {
+    event.preventDefault();
+    target.classList.remove("is-drop");
+    const raw = event.dataTransfer?.getData("text/plain") ?? "";
+    const handIndex = Number(raw);
+    if (!Number.isInteger(handIndex) || handIndex < 0) {
+      return;
+    }
+    onDrop(handIndex);
+  });
 }

@@ -11,28 +11,15 @@ export type CardLocus =
   | { readonly player: PlayerIndex; readonly zone: "tower" | "biome" };
 
 /**
- * Chave de uma cópia física na UI.
- * O PR #16 (não mergeado) carimba `instanceId` na carta e o preserva na cópia.
- * Enquanto a main não tiver esse campo, a chave descreve o lugar no BoardState.
- * Quando `instanceId` existir, ele passa na frente do fallback — é o único ponto para trocar.
+ * Chave da cópia física. O motor carimba `instanceId` (PR #16).
+ * Se a carta ainda não tiver o campo, a chave descreve o lugar no BoardState.
  */
 export function cardInstanceKey(card: Card, locus: CardLocus): string {
-  const stamped = readInstanceId(card);
-  if (stamped !== null) {
+  const stamped = card.instanceId;
+  if (stamped !== undefined && stamped.length > 0) {
     return stamped;
   }
   return fallbackKey(card.id, locus);
-}
-
-function readInstanceId(card: Card): string | null {
-  if (!Object.hasOwn(card, "instanceId")) {
-    return null;
-  }
-  const value = (card as Card & { readonly instanceId?: unknown }).instanceId;
-  if (typeof value !== "string" || value.length === 0) {
-    return null;
-  }
-  return value;
 }
 
 function fallbackKey(cardId: string, locus: CardLocus): string {

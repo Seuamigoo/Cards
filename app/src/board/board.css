@@ -6,12 +6,176 @@
 }
 
 .duel {
-  --side: 112px;
+  --side: 92px;
   --gap: 8px;
   position: relative;
+  flex: 1 1 auto;
+  min-height: 0;
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 8px;
+}
+
+.duel p {
+  margin: 0;
+}
+
+.hud {
+  flex: 0 0 auto;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  align-items: center;
+  gap: 8px;
+}
+
+.hud-center {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+  gap: 8px;
+}
+
+.phase-center {
+  font-size: 0.95rem;
+  letter-spacing: 0.03em;
+  text-align: center;
+}
+
+.hp-you {
+  justify-self: end;
+  text-align: right;
+}
+
+.hud-actions,
+.position-choice {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+}
+
+.hud select,
+.hud-back,
+.hud-actions button,
+.position-choice button {
+  font: inherit;
+  color: inherit;
+  background: #2a2118;
+  border: 1px solid #8d6b3a;
+  padding: 6px 10px;
+  cursor: pointer;
+}
+
+.table-stage {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  perspective: 1200px;
+  perspective-origin: center 42%;
+  overflow: hidden;
+}
+
+.table-plane .monster-slot,
+.table-plane .spell-slot,
+.table-plane .zone-side {
+  flex: 0 1 62px;
+  max-width: 62px;
+}
+
+.table-plane .card-frame,
+.table-plane .empty-face,
+.table-plane .zone-side.is-empty .slot-hit {
+  height: 86px;
+  max-height: 86px;
+}
+
+.table-plane h2 {
+  margin: 0;
+  font-size: 0.85rem;
+}
+
+.table-plane .pile {
+  width: 58px;
+  min-height: 46px;
+}
+
+.table-plane .card-back {
+  width: 22px;
+  height: 30px;
+}
+
+.position-choice {
+  min-height: 34px;
+}
+
+.table-plane .monster-row,
+.table-plane .spell-row,
+.table-plane .field-line {
+  justify-content: center;
+}
+
+.table-plane {
+  position: relative;
+  width: min(1080px, 100%);
+  transform: rotateX(30deg);
+  transform-style: preserve-3d;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px 10px 16px;
+  border: 2px solid #8d6b3a;
+  border-radius: 18px;
+  background:
+    linear-gradient(180deg, rgba(198, 163, 106, 0.16), transparent 28%),
+    linear-gradient(180deg, #2c2418, #16110c 55%, #221a12);
+  box-shadow: 0 28px 40px rgba(0, 0, 0, 0.45), inset 0 0 0 1px rgba(198, 163, 106, 0.35);
+}
+
+.table-plane.biome-planicie {
+  background:
+    radial-gradient(ellipse at 50% 42%, rgba(242, 205, 110, 0.42), transparent 58%),
+    linear-gradient(180deg, #4a3a16, #1c160c 70%);
+}
+
+.table-plane.biome-pantano {
+  background:
+    radial-gradient(ellipse at 50% 55%, rgba(150, 168, 150, 0.28), transparent 62%),
+    linear-gradient(180deg, #1a2620, #101612 72%);
+}
+
+.table-plane.biome-planicie.biome-pantano {
+  background:
+    radial-gradient(ellipse at 30% 40%, rgba(242, 205, 110, 0.32), transparent 46%),
+    radial-gradient(ellipse at 70% 60%, rgba(140, 160, 140, 0.3), transparent 50%),
+    linear-gradient(180deg, #3a3218, #141810);
+}
+
+.table-plane.biome-generic {
+  background:
+    radial-gradient(ellipse at 50% 50%, rgba(120, 160, 140, 0.22), transparent 60%),
+    linear-gradient(180deg, #243028, #14110e);
+}
+
+.hand-dock {
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-height: 0;
+}
+
+.duel .hand-dock .hand-row {
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding-bottom: 2px;
+}
+
+.duel button.hand-card {
+  flex: 0 0 118px;
+  width: 118px;
 }
 
 .phase-bar,
@@ -257,7 +421,7 @@
   position: absolute;
   inset: 0;
   z-index: 0;
-  transform: translate(calc(var(--peek) * -4px), calc(var(--peek) * -7px));
+  transform: translate(calc(var(--peek) * -2px), calc(var(--peek) * -5px));
 }
 
 .monster-stack > .card-frame:not(.material-back) {
@@ -528,6 +692,27 @@
 }
 
 @media (max-width: 700px) {
+  .hud {
+    grid-template-columns: 1fr 1fr;
+    grid-template-areas:
+      "opp you"
+      "center center";
+  }
+
+  .hud > .hp:not(.hp-you),
+  .hud > button.hp {
+    grid-area: opp;
+    justify-self: start;
+  }
+
+  .hud > .hp-you {
+    grid-area: you;
+  }
+
+  .hud-center {
+    grid-area: center;
+  }
+
   .duel-screen {
     padding-left: 8px;
     padding-right: 8px;
@@ -560,6 +745,54 @@
   .duel[data-mode="classic"] .spell-line {
     min-width: 760px;
   }
+}
+
+.monster-slot[data-role="attack"],
+.zone-side[data-role="attack"],
+.hp-target,
+.monster-slot.is-drop,
+.spell-slot.is-drop,
+.zone-side.is-drop {
+  box-shadow: 0 0 0 2px #e7b15a, 0 0 14px rgba(231, 177, 90, 0.45);
+}
+
+.fx-summon,
+.fx-fuse,
+.fx-position {
+  animation: fx-arrive 320ms ease-out;
+}
+
+.fx-attack {
+  animation: fx-lunge 280ms ease-out;
+}
+
+.fx-effect,
+.fx-pile {
+  animation: fx-glow 360ms ease-out;
+}
+
+.fx-destroy {
+  animation: fx-fade 320ms ease-out;
+}
+
+@keyframes fx-arrive {
+  from { filter: brightness(1.7); }
+  to { filter: none; }
+}
+
+@keyframes fx-lunge {
+  from { filter: brightness(1.5) saturate(1.3); }
+  to { filter: none; }
+}
+
+@keyframes fx-glow {
+  from { filter: brightness(1.8); }
+  to { filter: none; }
+}
+
+@keyframes fx-fade {
+  from { opacity: 0.35; }
+  to { opacity: 1; }
 }
 
 @media (prefers-reduced-motion: reduce) {

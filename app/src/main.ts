@@ -14,6 +14,8 @@ import { catalogEffectText } from "./board/catalogText";
 import { applyDuelInput, initialDuelView } from "./board/duel";
 import type { DuelInput, DuelViewState } from "./board/duel";
 import { resolveCardArt } from "./board/face";
+import { watchDuel } from "./board/fx";
+import type { BoardFx } from "./board/fx";
 import { brasaShowcase } from "./board/showcase";
 import { renderDuel } from "./board/view";
 import "./style.css";
@@ -78,6 +80,10 @@ function renderMenu(): HTMLElement {
   nav.append(
     actionButton("Jogar contra bot", () => {
       screen = "bot";
+      if (botMatch === null) {
+        startBot("classic", "easy");
+        return;
+      }
       draw();
     }),
     session === null
@@ -429,35 +435,21 @@ let botMatch: GameMatch | null = null;
 let botLevel: BotLevel = "easy";
 let duelView: DuelViewState = initialDuelView();
 let duelError: string | null = null;
+let duelMode = "classic-easy";
+let boardFx: BoardFx[] = [];
+let stopWatch: (() => void) | null = null;
 const botRng = createSeededRng(9);
 const effectText = catalogEffectText(catalogFile);
 
 function renderBot(): HTMLElement {
   const main = document.createElement("main");
   main.className = botMatch === null ? "" : "duel-screen";
-  const title = document.createElement("h1");
-  title.textContent = "Jogar contra bot";
-  const toolbar = document.createElement("div");
-  toolbar.className = "toolbar";
-  toolbar.append(
-    actionButton("Clássico fácil", () => startBot("classic", "easy")),
-    actionButton("Clássico normal", () => startBot("classic", "normal")),
-    actionButton("Blitz fácil", () => startBot("blitz", "easy")),
-    actionButton("Blitz normal", () => startBot("blitz", "normal")),
-    actionButton("Mesa com Dragão Brasa", () => startBrasa()),
-    actionButton("Voltar", () => {
-      screen = "menu";
-      draw();
-    }),
-  );
   if (botMatch === null) {
-    main.append(title, toolbar);
-    if (duelError !== null) {
-      const alert = document.createElement("p");
-      alert.setAttribute("role", "alert");
-      alert.textContent = duelError;
-      main.append(alert);
-    }
+    const title = document.createElement("h1");
+    title.textContent = "Jogar contra bot";
+    const note = document.createElement("p");
+    note.textContent = duelError ?? "O catálogo ainda não carregou.";
+    main.append(title, note);
     return main;
   }
   main.append(renderDuel({
@@ -466,16 +458,45 @@ function renderBot(): HTMLElement {
     view: duelView,
     texts: effectText,
     error: duelError,
+    fx: boardFx,
+    onMode: chooseMode,
+    modeId: duelMode,
+    onBack: () => {
+      screen = "menu";
+      draw();
+    },
     onInput: onDuelInput,
   }));
-  main.append(toolbar);
   return main;
+}
+
+function chooseMode(mode: string): void {
+  switch (mode) {
+    case "classic-easy":
+      startBot("classic", "easy");
+      return;
+    case "classic-normal":
+      startBot("classic", "normal");
+      return;
+    case "blitz-easy":
+      startBot("blitz", "easy");
+      return;
+    case "blitz-normal":
+      startBot("blitz", "normal");
+      return;
+    case "brasa":
+      startBrasa();
+      return;
+    default:
+      return;
+  }
 }
 
 function onDuelInput(input: DuelInput): void {
   if (botMatch === null) {
     return;
   }
+  boardFx = [];
   const result = applyDuelInput(botMatch.getState(), 0, duelView, input);
   duelView = result.view;
   if (result.action !== null) {
@@ -490,6 +511,14 @@ function onDuelInput(input: DuelInput): void {
   draw();
 }
 
+function attachWatch(match: GameMatch): void {
+  stopWatch?.();
+  boardFx = [];
+  stopWatch = watchDuel(match, (cue) => {
+    boardFx = [...boardFx, cue].slice(-8);
+  });
+}
+
 function startBot(mode: GameMode, level: BotLevel): void {
   if (!loaded.ok) {
     return;
@@ -500,12 +529,14 @@ function startBot(mode: GameMode, level: BotLevel): void {
     return;
   }
   botLevel = level;
+  duelMode = mode === "classic" ? (level === "easy" ? "classic-easy" : "classic-normal") : (level === "easy" ? "blitz-easy" : "blitz-normal");
   duelView = initialDuelView();
   duelError = null;
   botMatch = new GameMatch(mode, ["voce", "bot"], undefined, {
     decks: [human.cards, bot.cards],
     seed: 1,
   });
+  attachWatch(botMatch);
   runBot();
   draw();
 }
@@ -522,9 +553,11 @@ function startBrasa(): void {
     return;
   }
   botLevel = "easy";
+  duelMode = "brasa";
   duelView = initialDuelView();
   duelError = null;
   botMatch = showcase.match;
+  attachWatch(botMatch);
   draw();
 }
 
