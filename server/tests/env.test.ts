@@ -8,14 +8,18 @@ const secrets = {
 };
 
 describe("ambiente do servidor", () => {
-  it("ouve só localhost e uma origem quando HOST e CORS não vêm preenchidos", () => {
-    expect(listenHost(undefined)).toBe("127.0.0.1");
-    expect(listenHost("  ")).toBe("127.0.0.1");
-    expect(listenHost("0.0.0.0")).toBe("0.0.0.0");
+  it("ouve em todas as interfaces e libera o app Tauri e o dev", () => {
+    expect(listenHost(undefined)).toBe("0.0.0.0");
+    expect(listenHost("  ")).toBe("0.0.0.0");
+    expect(listenHost("127.0.0.1")).toBe("127.0.0.1");
     const env = readEnv(secrets);
-    expect(env.host).toBe("127.0.0.1");
-    expect(env.corsOrigin).toBe("http://127.0.0.1:1420");
-    expect(env.corsOrigins).toEqual(["http://127.0.0.1:1420"]);
+    expect(env.host).toBe("0.0.0.0");
+    expect(env.corsOrigins).toEqual([
+      "tauri://localhost",
+      "http://tauri.localhost",
+      "http://localhost:1420",
+      "http://127.0.0.1:1420",
+    ]);
     expect(env.uploadsDir).toBeNull();
   });
 
@@ -31,7 +35,13 @@ describe("ambiente do servidor", () => {
       HOST: "0.0.0.0",
     });
     expect(env.host).toBe("0.0.0.0");
-    expect(env.corsOrigins).toEqual(["http://tauri.localhost", "https://tauri.localhost"]);
+    expect(env.corsOrigins).toEqual([
+      "tauri://localhost",
+      "http://tauri.localhost",
+      "http://localhost:1420",
+      "http://127.0.0.1:1420",
+      "https://tauri.localhost",
+    ]);
     expect(env.uploadsDir).toBe("/data/uploads");
   });
 });

@@ -10,6 +10,13 @@ export interface ServerEnv {
   readonly nodeEnv: string;
 }
 
+export const LAN_ORIGINS = [
+  "tauri://localhost",
+  "http://tauri.localhost",
+  "http://localhost:1420",
+  "http://127.0.0.1:1420",
+] as const;
+
 export function readEnv(source: NodeJS.ProcessEnv = process.env): ServerEnv {
   const databaseUrl = required(source, "DATABASE_URL");
   const accessSecret = required(source, "JWT_ACCESS_SECRET");
@@ -18,7 +25,7 @@ export function readEnv(source: NodeJS.ProcessEnv = process.env): ServerEnv {
   if (!Number.isInteger(port) || port <= 0) {
     throw new Error("PORT inválida.");
   }
-  const corsOrigin = source.CORS_ORIGIN ?? "http://127.0.0.1:1420";
+  const corsOrigin = source.CORS_ORIGIN ?? LAN_ORIGINS.join(",");
   return {
     databaseUrl,
     accessSecret,
@@ -26,7 +33,7 @@ export function readEnv(source: NodeJS.ProcessEnv = process.env): ServerEnv {
     port,
     host: listenHost(source.HOST),
     corsOrigin,
-    corsOrigins: splitCsv(corsOrigin),
+    corsOrigins: corsAllowList(source.CORS_ORIGIN),
     uploadsDir: optionalPath(source.UPLOADS_DIR),
     nodeEnv: source.NODE_ENV ?? "development",
   };
@@ -34,9 +41,22 @@ export function readEnv(source: NodeJS.ProcessEnv = process.env): ServerEnv {
 
 export function listenHost(value: string | undefined): string {
   if (value === undefined || value.trim().length === 0) {
-    return "127.0.0.1";
+    return "0.0.0.0";
   }
   return value.trim();
+}
+
+export function corsAllowList(configured: string | undefined): readonly string[] {
+  const extra = configured === undefined || configured.trim().length === 0 ? [] : splitCsv(configured);
+  const seen = new Set<string>();
+  const origins: string[] = [];
+  for (const origin of [...LAN_ORIGINS, ...extra]) {
+    if (!seen.has(origin)) {
+      seen.add(origin);
+      origins.push(origin);
+    }
+  }
+  return origins;
 }
 
 export function splitCsv(value: string): readonly string[] {

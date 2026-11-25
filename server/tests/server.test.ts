@@ -1,6 +1,7 @@
 import { PrismaClient } from "@prisma/client";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { buildApp } from "../src/app";
+import { readEnv } from "../src/env";
 import { seedAdmin } from "../src/seed";
 
 const prisma = new PrismaClient();
@@ -22,6 +23,30 @@ async function tokenFor(email: string, password: string): Promise<string> {
 }
 
 describe("servidor", () => {
+  it("responde /health para a origem do Tauri", async () => {
+    const env = readEnv({
+      DATABASE_URL: "file:./unused.db",
+      JWT_ACCESS_SECRET: "segredo-access-teste",
+      JWT_REFRESH_SECRET: "segredo-refresh-teste",
+    });
+    const app = await buildApp({ prisma, env });
+    const response = await app.inject({
+      method: "GET",
+      url: "/health",
+      headers: { origin: "http://tauri.localhost" },
+    });
+    expect(response.statusCode).toBe(200);
+    expect(response.json()).toEqual({ ok: true });
+    expect(response.headers["access-control-allow-origin"]).toBe("http://tauri.localhost");
+    const dev = await app.inject({
+      method: "OPTIONS",
+      url: "/health",
+      headers: { origin: "http://127.0.0.1:1420", "access-control-request-method": "GET" },
+    });
+    expect(dev.headers["access-control-allow-origin"]).toBe("http://127.0.0.1:1420");
+    await app.close();
+  });
+
   beforeAll(async () => {
     const email = process.env.ADMIN_EMAIL;
     const password = process.env.ADMIN_PASSWORD;
