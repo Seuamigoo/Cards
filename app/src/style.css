@@ -47,6 +47,55 @@ button:disabled {
   cursor: not-allowed;
 }
 
+.gate-nav,
+.menu-nav,
+.battle-choices {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-width: 420px;
+}
+
+.gate-nav button,
+.menu-nav button,
+.battle-choices button {
+  min-height: 48px;
+}
+
+.soon {
+  margin: 4px 0 0;
+  color: #e0b13a;
+}
+
+.server-settings {
+  margin-top: 8px;
+  border: 1px solid #3a3126;
+  padding: 8px 12px 12px;
+}
+
+.server-settings summary {
+  cursor: pointer;
+}
+
+.server-settings label,
+.choice {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin: 8px 0;
+}
+
+.choice {
+  flex-direction: row;
+  align-items: center;
+}
+
+fieldset.choice-set {
+  border: 1px solid #3a3126;
+  margin: 0 0 16px;
+  padding: 8px 12px;
+}
+
 ul {
   list-style: none;
   margin: 0;
