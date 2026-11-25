@@ -687,19 +687,14 @@ function renderResources(
   deck.className = "pile deck-pile";
   deck.setAttribute("aria-label", `Deck, ${player.deck.length} ${noun(player.deck.length)}`);
   deck.append(pileCount(player.deck.length), pileName("Deck"));
-  const grave = document.createElement("button");
-  grave.type = "button";
-  grave.className = `pile grave-pile${pileMarked(fx, playerIndex, "graveyard") ? " fx-pile" : ""}`;
-  grave.setAttribute("aria-label", `Cemitério, ${player.graveyard.length} ${noun(player.graveyard.length)}. Ver cartas.`);
-  grave.append(pileCount(player.graveyard.length), pileName("Cemitério"));
-  grave.addEventListener("click", () => onInput({ type: "graveyard", player: playerIndex }));
+  const beyond = player.limbo.length + player.graveyard.length;
   const limbo = document.createElement("button");
   limbo.type = "button";
-  limbo.className = `pile limbo-pile${pileMarked(fx, playerIndex, "limbo") ? " fx-pile" : ""}`;
-  limbo.setAttribute("aria-label", `Limbo, ${player.limbo.length} ${noun(player.limbo.length)}. Ver cartas.`);
-  limbo.append(pileCount(player.limbo.length), pileName("Limbo"));
+  limbo.className = `pile limbo-pile${pileMarked(fx, playerIndex, "limbo") || pileMarked(fx, playerIndex, "graveyard") ? " fx-pile" : ""}`;
+  limbo.setAttribute("aria-label", `Limbo, ${beyond} ${noun(beyond)}. Ver cartas.`);
+  limbo.append(pileCount(beyond), pileName("Limbo"));
   limbo.addEventListener("click", () => onInput({ type: "limbo", player: playerIndex }));
-  row.append(deck, grave, limbo);
+  row.append(deck, limbo);
   return row;
 }
 
@@ -725,10 +720,11 @@ function renderDialog(
   const grid = document.createElement("div");
   grid.className = "dialog-cards";
   switch (dialogState.type) {
-    case "limbo": {
+    case "limbo":
+    case "graveyard": {
       const owner = dialogState.player;
       title.textContent = owner === viewer ? "Seu Limbo" : "Limbo do oponente";
-      const cards = state.players[owner].limbo;
+      const cards = [...state.players[owner].limbo, ...state.players[owner].graveyard];
       if (cards.length === 0) {
         const empty = document.createElement("p");
         empty.textContent = "O Limbo não tem cartas.";
@@ -740,25 +736,6 @@ function renderDialog(
           bandFromCard(card),
           faceCopy(card, texts),
           cardInstanceKey(card, { player: owner, zone: "limbo", index }),
-        ));
-      });
-      break;
-    }
-    case "graveyard": {
-      const owner = dialogState.player;
-      title.textContent = owner === viewer ? "Seu cemitério" : "Cemitério do oponente";
-      const cards = state.players[owner].graveyard;
-      if (cards.length === 0) {
-        const empty = document.createElement("p");
-        empty.textContent = "O cemitério não tem cartas.";
-        grid.append(empty);
-      }
-      cards.forEach((card, index) => {
-        grid.append(renderCardFace(
-          card,
-          bandFromCard(card),
-          faceCopy(card, texts),
-          cardInstanceKey(card, { player: owner, zone: "graveyard", index }),
         ));
       });
       break;
