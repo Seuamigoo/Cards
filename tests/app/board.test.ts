@@ -85,10 +85,10 @@ describe("ações do tabuleiro", () => {
     expect(selected.pending.filter((item) => item.label.startsWith("Invocar"))).toEqual([]);
 
     const chosen = duelOffers(state, 0, { handIndex, tributes: [], materials: [], zoneIndex: 0 });
-    expect(chosen.pending.map((item) => item.label).filter((label) => label.startsWith("Invocar"))).toEqual([
-      "Invocar no slot 1 em ataque",
-      "Invocar no slot 1 em defesa",
-    ]);
+    const labels = chosen.pending.map((item) => item.label);
+    expect(labels.filter((label) => label === "Ataque" || label === "Defesa")).toEqual(["Ataque", "Defesa"]);
+    expect(labels.some((label) => /^Invocar (?!no slot \d+)/.test(label))).toBe(false);
+    expect(labels.some((label) => label.startsWith("Invocar no slot") && label.includes("em"))).toBe(false);
   });
 
   it("segue a quantidade de slots do modo, sem número fixo", () => {
@@ -115,10 +115,17 @@ describe("ações do tabuleiro", () => {
     const hand = applyDuelInput(state, 0, initialDuelView(), { type: "hand", index: handIndex });
     const slot = applyDuelInput(state, 0, hand.view, { type: "own-monster", zoneIndex: 2 });
     expect(slot.action).toBeNull();
-    const attack = duelOffers(state, 0, slot.view.selection).pending.find((item) => item.label === "Invocar no slot 3 em ataque");
+    const attack = duelOffers(state, 0, slot.view.selection).pending.find((item) => item.label === "Ataque");
     expect(attack).toBeDefined();
     const done = applyDuelInput(state, 0, slot.view, { type: "pending", id: attack?.id ?? "" });
     expect(done.action).toMatchObject({ type: "summonMonster", zoneIndex: 2, position: "attack", handIndex });
+    const dropped = applyDuelInput(state, 0, initialDuelView(), { type: "drop-monster", handIndex, zoneIndex: 1 });
+    expect(dropped.action).toBeNull();
+    expect(dropped.view.selection).toMatchObject({ handIndex, zoneIndex: 1 });
+    const droppedLabels = duelOffers(state, 0, dropped.view.selection).pending.map((item) => item.label);
+    expect(droppedLabels).toContain("Ataque");
+    expect(droppedLabels).toContain("Defesa");
+    expect(droppedLabels.some((label) => /^Invocar (?!no slot \d+)/.test(label))).toBe(false);
   });
 
   it("oferece cada alvo de ataque uma vez, vindo do motor", () => {

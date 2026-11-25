@@ -11,6 +11,7 @@ export interface DuelSelection {
 export type DuelDialog =
   | { readonly type: "none" }
   | { readonly type: "limbo"; readonly player: PlayerIndex }
+  | { readonly type: "graveyard"; readonly player: PlayerIndex }
   | { readonly type: "materials"; readonly player: PlayerIndex; readonly zoneIndex: number };
 
 export interface DuelViewState {
@@ -63,7 +64,12 @@ export type DuelInput =
   | { readonly type: "biome" }
   | { readonly type: "opponent-player" }
   | { readonly type: "pending"; readonly id: string }
+  | { readonly type: "drop-monster"; readonly handIndex: number; readonly zoneIndex: number }
+  | { readonly type: "drop-spell"; readonly handIndex: number; readonly zoneIndex: number }
+  | { readonly type: "drop-tower"; readonly handIndex: number }
+  | { readonly type: "drop-biome"; readonly handIndex: number }
   | { readonly type: "limbo"; readonly player: PlayerIndex }
+  | { readonly type: "graveyard"; readonly player: PlayerIndex }
   | { readonly type: "materials"; readonly player: PlayerIndex; readonly zoneIndex: number }
   | { readonly type: "close-dialog" };
 
@@ -120,6 +126,16 @@ export function applyDuelInput(
       return { view: { selection: view.selection, dialog: { type: "none" } }, action: null };
     case "limbo":
       return { view: { selection: view.selection, dialog: { type: "limbo", player: input.player } }, action: null };
+    case "graveyard":
+      return { view: { selection: view.selection, dialog: { type: "graveyard", player: input.player } }, action: null };
+    case "drop-monster":
+      return onOwnMonster(selectHand(view, input.handIndex), duelOffers(state, viewer, selectHand(view, input.handIndex).selection), input.zoneIndex);
+    case "drop-spell":
+      return dispatchOrKeep(selectHand(view, input.handIndex), setOnSpell(legal(state, viewer), selectHand(view, input.handIndex).selection, input.zoneIndex));
+    case "drop-tower":
+      return dispatchOrKeep(selectHand(view, input.handIndex), playTower(legal(state, viewer), selectHand(view, input.handIndex).selection));
+    case "drop-biome":
+      return dispatchOrKeep(selectHand(view, input.handIndex), playBiome(legal(state, viewer), selectHand(view, input.handIndex).selection));
     case "materials":
       return {
         view: { selection: view.selection, dialog: { type: "materials", player: input.player, zoneIndex: input.zoneIndex } },
@@ -270,6 +286,16 @@ function onOwnMonster(
       return unexpected;
     }
   }
+}
+
+function selectHand(view: DuelViewState, handIndex: number): DuelViewState {
+  if (view.selection.handIndex === handIndex) {
+    return view;
+  }
+  return {
+    selection: { handIndex, tributes: [], materials: [], zoneIndex: null },
+    dialog: view.dialog,
+  };
 }
 
 function toggleHand(selection: DuelSelection, index: number): DuelSelection {
@@ -580,18 +606,31 @@ function summonLabel(
   viewer: PlayerIndex,
   action: Extract<Action, { type: "summonMonster" }>,
 ): string {
-  const base = `Invocar no slot ${action.zoneIndex + 1} em ${positionWord(action.position)}`;
+  const stance = stanceLabel(action.position);
   if (action.effectTargetZoneIndex === undefined) {
-    return base;
+    return stance;
   }
   const foe = opponentOf(viewer);
   const target = state.players[foe].monsterZone[action.effectTargetZoneIndex];
   const name = target?.card.name ?? "monstro";
-  return `${base}, alvo slot ${action.effectTargetZoneIndex + 1} (${name})`;
+  return `${stance}, alvo slot ${action.effectTargetZoneIndex + 1} (${name})`;
 }
 
 function fuseLabel(action: Extract<Action, { type: "fuseBrasa" }>): string {
-  return `Fundir no slot ${action.zoneIndex + 1} em ${positionWord(action.position)}`;
+  return stanceLabel(action.position);
+}
+
+function stanceLabel(position: BattlePosition): string {
+  switch (position) {
+    case "attack":
+      return "Ataque";
+    case "defense":
+      return "Defesa";
+    default: {
+      const unexpected: never = position;
+      return String(unexpected);
+    }
+  }
 }
 
 function positionLabel(state: BoardState, viewer: PlayerIndex, zoneIndex: number): string {
