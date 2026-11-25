@@ -9,20 +9,29 @@ import { probeServer, rememberServer, serverFieldValue, readStoredServer } from 
 import type { AdminCard, Session } from "./api";
 import { CardRegistry, CatalogCache } from "../../src/catalog/index";
 import type { CardRegistryResult } from "../../src/catalog/index";
-import type { Card } from "../../src/domain/index";
 import { MemoryStorageAdapter } from "../../src/persistence/index";
 import { catalogEffectText } from "./board/catalogText";
 import { applyDuelInput, initialDuelView } from "./board/duel";
 import type { DuelInput, DuelViewState } from "./board/duel";
-import { resolveCardArt } from "./board/face";
 import { watchDuel } from "./board/fx";
 import type { BoardFx } from "./board/fx";
 import { brasaShowcase } from "./board/showcase";
 import { renderDuel } from "./board/view";
 import { INITIAL_SCREEN, aiDuelRequest, homeEntries, pvpHint, showDragonTable } from "./home";
+import type { MenuAccess } from "./home";
+import { EMPTY_CARD_FILTER } from "./shell/cardFilters";
+import type { CardFilter } from "./shell/cardFilters";
+import { addCopy, deckSizeStatus, removeCopy } from "./shell/deckRules";
+import { renderCollectionGrid, renderDeckPlace, renderProfile, renderShopPlace, renderStarterPick } from "./shell/places";
+import { applyStarter, createExamplePlayerData, freshAccount, guestRecord } from "./shell/playerData";
+import type { PlayerDataService, PlayerRecord } from "./shell/playerData";
+import { renderUpdateScreen, stubUpdateView } from "./updateScreen";
+import type { UpdateView } from "./updateScreen";
+import "./shell/shell.css";
 import "./style.css";
 
-type Screen = "gate" | "menu" | "battle" | "collection" | "login" | "register" | "admin" | "online" | "bot";
+type Screen = "update" | "gate" | "starter" | "menu" | "battle" | "deck" | "collection" | "shop" | "profile" | "login" | "register" | "admin" | "online" | "bot";
+type ShopTab = "caixas" | "decks" | "vendedor" | "mercado";
 
 let loaded: CardRegistryResult = CardRegistry.fromJSON(JSON.stringify(catalogFile));
 let session: Session | null = null;
@@ -33,27 +42,132 @@ if (root === null) {
 }
 const app = root;
 
-let screen: Screen = INITIAL_SCREEN;
+const updateView: UpdateView = stubUpdateView({
+  dev: import.meta.env.DEV,
+  online: navigator.onLine,
+  preview: new URLSearchParams(window.location.search).get("atualizacao"),
+});
+let screen: Screen = updateView.phase === "current" ? INITIAL_SCREEN : "update";
 let guest = false;
+let offlinePlay = updateView.phase === "offline";
 let battleMode: GameMode = "classic";
 let battleLevel: BotLevel = "easy";
 let battleNote: string | null = null;
+let guestStarter = "vanguarda-do-reino";
+let player: PlayerRecord = guestRecord();
+let playerService: PlayerDataService = createExamplePlayerData(player);
+let cardFilter: CardFilter = EMPTY_CARD_FILTER;
+let selectedCardId: string | null = null;
+let shopTab: ShopTab = "caixas";
+let openBoxId: string | null = null;
+let reveal: readonly string[] = [];
 void refreshCatalog().catch(() => undefined).finally(draw);
 
 function draw(): void {
   app.replaceChildren();
   switch (screen) {
+    case "update":
+      app.append(renderUpdateScreen(updateView, {
+        enter: () => {
+          offlinePlay = false;
+          screen = "gate";
+          draw();
+        },
+        guest: () => {
+          offlinePlay = true;
+          guest = true;
+          session = null;
+          player = guestRecord();
+          playerService = createExamplePlayerData(player);
+          screen = "menu";
+          draw();
+        },
+      }));
+      return;
     case "gate":
       app.append(renderGate());
+      return;
+    case "starter":
+      app.append(renderStarterPick((starterId) => {
+        void playerService.chooseStarter(starterId).then((record) => {
+          player = record;
+          screen = "menu";
+          draw();
+        });
+      }));
+      return;
+    case "deck":
+      app.append(pageWithWallet(renderDeckPlace({
+        record: player,
+        cards: catalogRegistry(),
+        texts: effectText,
+        mode: battleMode,
+        selectedId: selectedCardId,
+        filter: cardFilter,
+        onMode: (mode) => {
+          battleMode = mode;
+          draw();
+        },
+        onSelect: (cardId) => {
+          selectedCardId = cardId;
+          draw();
+        },
+        onFilter: (filter) => {
+          cardFilter = filter;
+          draw();
+        },
+        onAdd: () => changeDeck(1),
+        onRemove: () => changeDeck(-1),
+      })));
+      return;
+    case "collection":
+      app.append(pageWithWallet(renderCollectionGrid({
+        record: player,
+        cards: catalogRegistry(),
+        texts: effectText,
+        filter: cardFilter,
+        selectedId: selectedCardId,
+        onFilter: (filter) => {
+          cardFilter = filter;
+          draw();
+        },
+        onSelect: (cardId) => {
+          selectedCardId = cardId;
+          draw();
+        },
+      })));
+      return;
+    case "shop":
+      app.append(pageWithWallet(renderShopPlace({
+        cards: catalogRegistry(),
+        texts: effectText,
+        tab: shopTab,
+        onTab: (tab) => {
+          shopTab = tab;
+          reveal = [];
+          draw();
+        },
+        openBoxId,
+        onOpenBox: (id) => {
+          openBoxId = openBoxId === id ? null : id;
+          draw();
+        },
+        reveal,
+        onReveal: (ids) => {
+          reveal = ids;
+          openBoxId = shopTab === "caixas" ? openBoxId : null;
+          draw();
+        },
+      })));
+      return;
+    case "profile":
+      app.append(pageWithWallet(renderProfile(player)));
       return;
     case "menu":
       app.append(renderMenu());
       return;
     case "battle":
       app.append(renderBattle());
-      return;
-    case "collection":
-      app.append(renderCollection(loaded));
       return;
     case "login":
       app.append(renderAuth("login"));
@@ -88,22 +202,24 @@ function renderGate(): HTMLElement {
   const title = document.createElement("h1");
   title.textContent = "Convergência";
   const intro = document.createElement("p");
-  intro.textContent = "Escolha como entrar.";
+  intro.textContent = offlinePlay ? "Sem conexão. Entre como convidado para jogar J x IA." : "Escolha como entrar.";
   const nav = document.createElement("div");
   nav.className = "gate-nav";
   nav.setAttribute("aria-label", "Entrada");
   nav.append(
-    actionButton("Entrar", () => {
+    offlinePlay ? disabledButton("Entrar") : actionButton("Entrar", () => {
       screen = "login";
       draw();
     }),
-    actionButton("Cadastrar", () => {
+    offlinePlay ? disabledButton("Cadastrar") : actionButton("Cadastrar", () => {
       screen = "register";
       draw();
     }),
     actionButton("Entrar como convidado", () => {
       guest = true;
       session = null;
+      player = guestRecord();
+      playerService = createExamplePlayerData(player);
       screen = "menu";
       draw();
     }),
@@ -147,7 +263,7 @@ function renderMenu(): HTMLElement {
   const nav = document.createElement("nav");
   nav.className = "menu-nav";
   nav.setAttribute("aria-label", "Menu principal");
-  for (const entry of homeEntries()) {
+  for (const entry of homeEntries(menuAccess())) {
     if (entry.ready) {
       nav.append(actionButton(entry.label, () => openHome(entry.id)));
       continue;
@@ -176,7 +292,11 @@ function renderMenu(): HTMLElement {
       draw();
     }));
   }
-  main.append(title, intro, nav);
+  if (menuAccess() === "account") {
+    main.append(title, walletBar(), intro, nav);
+  } else {
+    main.append(title, intro, nav);
+  }
   return main;
 }
 
@@ -191,6 +311,8 @@ function openHome(id: "battle" | "deck" | "collection" | "shop" | "profile"): vo
     case "collection":
     case "shop":
     case "profile":
+      screen = id;
+      draw();
       return;
     default: {
       const unexpected: never = id;
@@ -232,10 +354,37 @@ function renderBattle(): HTMLElement {
   const ai = document.createElement("section");
   const aiTitle = document.createElement("h2");
   aiTitle.textContent = "J x IA";
+  const deckIds = activeDeckIds();
+  const size = deckSizeStatus(battleMode, deckIds.length);
   const start = actionButton("Batalhar contra a IA", () => {
     startAiDuel(aiDuelRequest(battleMode, battleLevel));
   });
+  start.disabled = !size.valid;
+  if (!size.valid && size.reason !== null) {
+    start.setAttribute("aria-describedby", "deck-size");
+  }
   ai.append(aiTitle, start);
+  if (!size.valid && size.reason !== null) {
+    const why = document.createElement("p");
+    why.id = "deck-size";
+    why.className = "soon";
+    why.textContent = size.reason;
+    ai.append(why);
+  }
+  if (guest || offlinePlay) {
+    const pick = document.createElement("fieldset");
+    pick.className = "choice-set";
+    const legend = document.createElement("legend");
+    legend.textContent = "Deck inicial";
+    pick.append(legend);
+    for (const starter of [["vanguarda-do-reino", "Vanguarda do Reino"], ["marcha-da-necropole", "Marcha da Necrópole"]] as const) {
+      pick.append(choice("guest-starter", starter[0], starter[1], guestStarter === starter[0], () => {
+        guestStarter = starter[0];
+        draw();
+      }));
+    }
+    ai.append(pick);
+  }
   if (showDragonTable(import.meta.env.DEV)) {
     ai.append(actionButton("Mesa com Dragão Brasa", () => {
       startBrasa();
@@ -283,71 +432,6 @@ function choice(name: string, value: string, label: string, checked: boolean, on
   text.textContent = label;
   wrapper.append(input, text);
   return wrapper;
-}
-
-function renderCollection(result: CardRegistryResult): HTMLElement {
-  const main = document.createElement("main");
-  main.className = "collection";
-  const title = document.createElement("h1");
-  title.textContent = "Coleção";
-  const toolbar = document.createElement("div");
-  toolbar.className = "toolbar";
-  toolbar.append(
-    actionButton("Voltar", () => {
-      screen = "menu";
-      draw();
-    }),
-  );
-  main.append(title, toolbar);
-  if (!result.ok) {
-    const message = document.createElement("p");
-    message.textContent = result.errors.map((error) => error.message).join(" ");
-    main.append(message);
-    return main;
-  }
-  const list = document.createElement("ul");
-  for (const card of result.registry.all()) {
-    list.append(renderCard(card));
-  }
-  main.append(list);
-  return main;
-}
-
-function renderCard(card: Card): HTMLLIElement {
-  const item = document.createElement("li");
-  if (card.image !== undefined) {
-    const image = document.createElement("img");
-    image.src = resolveCardArt(card.image.src);
-    image.alt = card.image.alt ?? card.name;
-    item.append(image);
-  }
-  const details = document.createElement("div");
-  const name = document.createElement("strong");
-  name.textContent = card.name;
-  const rarity = document.createElement("span");
-  rarity.textContent = card.rarity;
-  const stats = document.createElement("span");
-  stats.textContent = statLine(card);
-  details.append(name, rarity, stats);
-  item.append(details);
-  return item;
-}
-
-function statLine(card: Card): string {
-  switch (card.kind) {
-    case "monster":
-      return `Nv ${card.level} · ATK ${card.atk} / DEF ${card.def}`;
-    case "tower":
-      return `DEF ${card.def}`;
-    case "spell":
-    case "trap":
-    case "biome":
-      return "ATK — / DEF —";
-    default: {
-      const unexpected: never = card;
-      return String(unexpected);
-    }
-  }
 }
 
 function disabledButton(label: string): HTMLButtonElement {
@@ -429,7 +513,17 @@ async function submitAuth(
     return;
   }
   if (mode === "register") {
-    message.textContent = (await registerAccount(email, username, password)) ?? "Conta criada. Entre para continuar.";
+    const created = await registerAccount(email, username, password);
+    if (created !== null) {
+      message.textContent = created;
+      return;
+    }
+    guest = false;
+    offlinePlay = false;
+    player = freshAccount();
+    playerService = createExamplePlayerData(player);
+    screen = "starter";
+    draw();
     return;
   }
   const result = await loginAccount(email, password);
@@ -439,6 +533,9 @@ async function submitAuth(
   }
   session = result;
   guest = false;
+  offlinePlay = false;
+  player = applyStarter(freshAccount(), "vanguarda-do-reino");
+  playerService = createExamplePlayerData(player);
   screen = "menu";
   draw();
 }
@@ -649,11 +746,104 @@ function renderBot(): HTMLElement {
 }
 
 function startAiDuel(request: { readonly mode: GameMode; readonly level: BotLevel }): void {
-  if (!startBot(request.mode, request.level)) {
+  const ids = activeDeckIds();
+  const size = deckSizeStatus(request.mode, ids.length);
+  if (!size.valid) {
+    battleNote = size.reason;
+    screen = "battle";
+    draw();
+    return;
+  }
+  if (!startBot(request.mode, request.level, ids)) {
     battleNote = duelError ?? "O catálogo ainda não carregou.";
     screen = "battle";
     draw();
   }
+}
+
+function activeDeckIds(): readonly string[] {
+  if (guest || offlinePlay) {
+    return player.decks.find((deck) => deck.mode === battleMode && deck.id.startsWith(guestStarter))?.cardIds ?? [];
+  }
+  return player.decks.find((deck) => deck.mode === battleMode)?.cardIds ?? [];
+}
+
+function menuAccess(): MenuAccess {
+  if (offlinePlay) {
+    return "offline";
+  }
+  if (guest || session === null) {
+    return "guest";
+  }
+  return "account";
+}
+
+function changeDeck(direction: 1 | -1): void {
+  if (!loaded.ok || selectedCardId === null) {
+    return;
+  }
+  const card = loaded.registry.get(selectedCardId);
+  if (card === undefined) {
+    return;
+  }
+  const next = player.decks.map((deck) => {
+    if (deck.mode !== battleMode) {
+      return deck;
+    }
+    const owned = player.collection.find((entry) => entry.carta === card.id)?.quantidade ?? 0;
+    if (direction > 0) {
+      const added = addCopy(deck.cardIds, card.id, owned, card.rarity, player.marketLocked.includes(card.id));
+      return added.ok ? { ...deck, cardIds: [...added.deck] } : deck;
+    }
+    const removed = removeCopy(deck.cardIds, card.id);
+    return removed.ok ? { ...deck, cardIds: [...removed.deck] } : deck;
+  });
+  void playerService.saveDecks(next, (cardId) => loaded.ok ? loaded.registry.get(cardId)?.rarity ?? null : null).then((saved) => {
+    if (saved.ok) {
+      player = saved.record;
+    }
+    draw();
+  });
+}
+
+function pageWithWallet(body: HTMLElement): HTMLElement {
+  const main = document.createElement("main");
+  main.className = "hub";
+  if (player.economy) {
+    main.append(walletBar());
+  }
+  main.append(body, actionButton("Voltar", () => {
+    screen = "menu";
+    draw();
+  }));
+  return main;
+}
+
+function walletBar(): HTMLElement {
+  const header = document.createElement("header");
+  header.className = "wallet";
+  header.setAttribute("aria-label", "Saldos");
+  header.append(balanceMark("Cristais", player.crystals, "crystal"), balanceMark("Essência", player.essence, "essence"));
+  if (player.example) {
+    const flag = document.createElement("p");
+    flag.className = "example-flag";
+    flag.textContent = "exemplo";
+    header.append(flag);
+  }
+  return header;
+}
+
+function balanceMark(label: string, value: number, kind: "crystal" | "essence"): HTMLElement {
+  const item = document.createElement("p");
+  item.className = "wallet-balance";
+  const icon = document.createElement("span");
+  icon.className = kind === "crystal" ? "balance-icon crystal" : "balance-icon essence";
+  icon.setAttribute("aria-hidden", "true");
+  const text = document.createElement("span");
+  text.textContent = `${label} ${new Intl.NumberFormat("pt-BR").format(value)}`;
+  item.setAttribute("aria-label", `Saldo de ${label}: ${value}`);
+  item.append(icon, text);
+  return item;
 }
 
 function onDuelInput(input: DuelInput): void {
@@ -683,12 +873,20 @@ function attachWatch(match: GameMatch): void {
   });
 }
 
-function startBot(mode: GameMode, level: BotLevel): boolean {
+function catalogRegistry(): CardRegistry {
+  if (!loaded.ok) {
+    throw new Error("Catálogo indisponível.");
+  }
+  return loaded.registry;
+}
+
+function startBot(mode: GameMode, level: BotLevel, cardIds?: readonly string[]): boolean {
   if (!loaded.ok) {
     duelError = "O catálogo ainda não carregou.";
     return false;
   }
-  const human = buildDeck(loaded.registry, [...starterCardIds("vanguarda-do-reino", mode)]);
+  const humanIds = cardIds ?? [...starterCardIds("vanguarda-do-reino", mode)];
+  const human = buildDeck(loaded.registry, [...humanIds]);
   const bot = buildDeck(loaded.registry, [...starterCardIds("marcha-da-necropole", mode)]);
   if (!human.ok || !bot.ok) {
     duelError = "Não foi possível montar os decks iniciais.";

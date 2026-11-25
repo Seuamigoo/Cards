@@ -4,9 +4,9 @@ import { INITIAL_SCREEN, aiDuelRequest, homeEntries, pvpHint, showDragonTable } 
 describe("tela inicial", () => {
   it("abre na entrada e só libera Batalhar no menu", () => {
     expect(INITIAL_SCREEN).toBe("gate");
-    const ready = homeEntries().filter((entry) => entry.ready).map((entry) => entry.id);
-    expect(ready).toEqual(["battle"]);
-    expect(homeEntries().filter((entry) => !entry.ready).every((entry) => entry.hint === "em breve")).toBe(true);
+    expect(homeEntries("account").every((entry) => entry.ready)).toBe(true);
+    expect(homeEntries("guest").filter((entry) => entry.ready).map((entry) => entry.id)).toEqual(["battle", "collection"]);
+    expect(homeEntries("offline").filter((entry) => entry.ready).map((entry) => entry.id)).toEqual(["battle"]);
   });
 
   it("pede o duelo só com modo e dificuldade, e esconde o Dragão fora do dev", () => {

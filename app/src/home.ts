@@ -13,13 +13,17 @@ export interface HomeEntry {
   readonly hint: string | null;
 }
 
-export function homeEntries(): readonly HomeEntry[] {
+export type MenuAccess = "account" | "guest" | "offline";
+
+export function homeEntries(access: MenuAccess = "account"): readonly HomeEntry[] {
+  const locked = access !== "account";
+  const hint = access === "offline" ? "Sem conexão." : "Faça login.";
   return [
     { id: "battle", label: "Batalhar", ready: true, hint: null },
-    { id: "deck", label: "Organizar deck", ready: false, hint: "em breve" },
-    { id: "collection", label: "Coleção", ready: false, hint: "em breve" },
-    { id: "shop", label: "Loja", ready: false, hint: "em breve" },
-    { id: "profile", label: "Perfil", ready: false, hint: "em breve" },
+    { id: "deck", label: "Organizar deck", ready: !locked, hint: locked ? hint : null },
+    { id: "collection", label: "Coleção", ready: access !== "offline", hint: access === "offline" ? hint : null },
+    { id: "shop", label: "Loja", ready: !locked, hint: locked ? hint : null },
+    { id: "profile", label: "Perfil", ready: !locked, hint: locked ? hint : null },
   ];
 }
 
