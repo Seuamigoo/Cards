@@ -89,13 +89,7 @@ export function removeMonster(owner: FieldDraft, opponent: FieldDraft | null, zo
       opponent.hp -= damage;
     }
   }
-  const races = slot.card.tags.filter((tag) => !["WARRIOR", "MAGE", "ARCHER", "ASSASSIN", "CLERIC"].includes(tag));
-  const toLimbo = reason === "leave" || materials.length > 0 || slot.card.id === DRAGAO_BRASA_ID || races.length === 2;
-  if (toLimbo) {
-    owner.limbo = [...owner.limbo, copyCard(slot.card), ...materials.map((card) => copyCard(card))];
-    return;
-  }
-  owner.graveyard = [...owner.graveyard, copyCard(slot.card)];
+  owner.limbo = [...owner.limbo, copyCard(slot.card), ...materials.map((card) => copyCard(card))];
 }
 
 export function onBattleDestroy(attacker: FieldDraft, defender: FieldDraft, attackerZoneIndex: number): void {

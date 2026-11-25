@@ -52,11 +52,19 @@ export interface SpellTrapSetEvent {
   readonly cardId: string;
 }
 
+export interface SpellTrapActivatedTarget {
+  readonly owner: PlayerIndex;
+  readonly zoneIndex: number | null;
+  readonly instanceId: string | null;
+}
+
 export interface SpellTrapActivatedEvent {
   readonly playerIndex: PlayerIndex;
   readonly zoneIndex: number;
   readonly instanceId: string;
   readonly cardId: string;
+  readonly owner: PlayerIndex;
+  readonly targets?: readonly SpellTrapActivatedTarget[];
 }
 
 export interface EffectActivatedEvent {

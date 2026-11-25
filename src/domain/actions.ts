@@ -39,6 +39,11 @@ export type Action =
   | { readonly type: "activate"; readonly zoneIndex: number }
   | { readonly type: "changePosition"; readonly zoneIndex: number }
   | { readonly type: "setSpellTrap"; readonly handIndex: number; readonly zoneIndex: number }
+  | {
+      readonly type: "activateSpellTrap";
+      readonly zoneIndex: number;
+      readonly targets?: readonly SpellTrapTarget[];
+    }
   | { readonly type: "summonTower"; readonly handIndex: number }
   | { readonly type: "playBiome"; readonly handIndex: number }
   | {
@@ -54,6 +59,12 @@ export type Action =
       readonly attackerZoneIndex: number;
       readonly target: AttackTarget;
     };
+
+export interface SpellTrapTarget {
+  readonly owner: PlayerIndex;
+  readonly zoneIndex: number | null;
+  readonly instanceId: string | null;
+}
 
 export type ActionResult =
   | { readonly ok: true; readonly state: BoardState }
@@ -84,6 +95,11 @@ export function getLegalActions(state: BoardState, playerIndex: PlayerIndex): re
 
   const actions: Action[] = [{ type: "advancePhase" }];
   if (state.phase === "battle") {
+    state.players[playerIndex].spellTrapZone.forEach((slot, zoneIndex) => {
+      if (slot !== null && slot.kind === "trap") {
+        actions.push({ type: "activateSpellTrap", zoneIndex });
+      }
+    });
     state.players[playerIndex].monsterZone.forEach((slot, zoneIndex) => {
       if (slot === null) {
         return;
@@ -134,6 +150,12 @@ export function getLegalActions(state: BoardState, playerIndex: PlayerIndex): re
     actions.push(...listConvergence(player));
   }
 
+  player.spellTrapZone.forEach((slot, zoneIndex) => {
+    if (slot !== null && slot.kind === "spell") {
+      actions.push({ type: "activateSpellTrap", zoneIndex });
+    }
+  });
+
   player.monsterZone.forEach((slot, zoneIndex) => {
     if (slot !== null && !slot.summonedThisTurn && !slot.attackedThisTurn && !slot.changedPositionThisTurn) {
       actions.push({ type: "changePosition", zoneIndex });
@@ -167,6 +189,8 @@ export function applyAction(
       return applyChangePosition(state, playerIndex, action.zoneIndex);
     case "setSpellTrap":
       return applySetSpellTrap(state, playerIndex, action.handIndex, action.zoneIndex);
+    case "activateSpellTrap":
+      return applyActivateSpellTrap(state, playerIndex, action.zoneIndex);
     case "summonTower":
       return applySummonTower(state, playerIndex, action.handIndex);
     case "playBiome":
@@ -375,6 +399,26 @@ function applySetSpellTrap(
   const zoneSlots = [...draft.spellTrapZone];
   zoneSlots[zoneIndex] = setCard;
   draft.spellTrapZone = zoneSlots;
+  return success(commitBoard(state, replacePlayer(state.players, playerIndex, commitPlayer(draft))));
+}
+
+function applyActivateSpellTrap(state: BoardState, playerIndex: PlayerIndex, zoneIndex: number): ActionResult {
+  const player = state.players[playerIndex];
+  const card = player.spellTrapZone[zoneIndex];
+  if (card === null || card === undefined) {
+    return failure("Não há magia ou armadilha nesse slot.");
+  }
+  if (card.kind === "spell" && !isMainPhase(state.phase)) {
+    return failure("Magias só são ativadas na Main Phase.");
+  }
+  if (card.kind === "trap" && state.phase !== "battle") {
+    return failure("Armadilhas só são ativadas na fase de batalha.");
+  }
+  const draft = draftOf(player);
+  const zone = [...draft.spellTrapZone];
+  zone[zoneIndex] = null;
+  draft.spellTrapZone = zone;
+  draft.limbo = [...draft.limbo, copyCard(card)];
   return success(commitBoard(state, replacePlayer(state.players, playerIndex, commitPlayer(draft))));
 }
 

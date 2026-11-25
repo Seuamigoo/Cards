@@ -242,6 +242,32 @@ describe("linha do tempo dos eventos", () => {
     expect(lines.some((line) => line.startsWith("spelltrap:activated"))).toBe(false);
   });
 
+  it("emite spelltrap:activated com dono, cardId e alvos, e manda a carta ao Limbo", () => {
+    const match = board({
+      ownHand: [spell("lamina"), trap("rede")],
+    });
+    ok(match.dispatch({ type: "setSpellTrap", handIndex: 0, zoneIndex: 0 }));
+    ok(match.dispatch({ type: "setSpellTrap", handIndex: 0, zoneIndex: 1 }));
+    const spellCard = match.getState().players[0].spellTrapZone[0];
+    const lines = trace(match);
+    ok(match.dispatch({
+      type: "activateSpellTrap",
+      zoneIndex: 0,
+      targets: [{ owner: 1, zoneIndex: null, instanceId: null }],
+    }));
+    expect(lines[0]).toBe(`spelltrap:activated p0 z0 lamina ${spellCard?.instanceId ?? ""}`);
+    expect(lines[1]).toContain("card:sent p0 limbo spelltrap z0 lamina");
+    expect(match.getState().players[0].limbo.map((card) => card.id)).toEqual(["lamina"]);
+
+    ok(match.dispatch({ type: "advancePhase" }));
+    expect(match.getState().phase).toBe("battle");
+    const trapCard = match.getState().players[0].spellTrapZone[1];
+    lines.length = 0;
+    ok(match.dispatch({ type: "activateSpellTrap", zoneIndex: 1 }));
+    expect(lines[0]).toBe(`spelltrap:activated p0 z1 rede ${trapCard?.instanceId ?? ""}`);
+    expect(match.getState().players[0].spellTrapZone[1]).toBeNull();
+  });
+
   it("ativa o efeito de uma vez por turno", () => {
     const healer = monster("serafim-justiceiro", 1400, 1600, 4, ["ANGEL", "CLERIC"]);
     const match = board({
@@ -295,7 +321,7 @@ describe("linha do tempo dos eventos", () => {
       "damage:dealt battle monster p1 z0 700 fraco",
       "damage:dealt battle player p1 z- 700 -",
       `monster:destroyed p1 z0 fraco ${victim?.card.instanceId ?? ""}`,
-      `card:sent p1 graveyard monster z0 fraco ${victim?.card.instanceId ?? ""}`,
+      `card:sent p1 limbo monster z0 fraco ${victim?.card.instanceId ?? ""}`,
     ]);
 
     const defense = board({
@@ -307,7 +333,7 @@ describe("linha do tempo dos eventos", () => {
     const defenseLines = trace(defense);
     ok(defense.dispatch({ type: "attack", attackerZoneIndex: 0, target: { kind: "monster", zoneIndex: 0 } }));
     expect(defenseLines.map((line) => line.split(" ")[0])).toEqual(["attack:declared", "monster:destroyed", "card:sent"]);
-    expect(defenseLines[2]).toContain(`graveyard monster z0 muro ${wall?.card.instanceId ?? ""}`);
+    expect(defenseLines[2]).toContain(`limbo monster z0 muro ${wall?.card.instanceId ?? ""}`);
 
     const pierced = board({
       phase: "battle",
@@ -324,7 +350,7 @@ describe("linha do tempo dos eventos", () => {
       "card:sent",
     ]);
     expect(piercedLines[1]).toBe("damage:dealt battle monster p1 z0 500 muro");
-    expect(piercedLines[4]).toContain("graveyard");
+    expect(piercedLines[4]).toContain("limbo");
 
     const mixed = board({
       phase: "battle",
@@ -378,8 +404,8 @@ describe("linha do tempo dos eventos", () => {
     ]);
     expect(tradeLines[1]).toContain("p1 z0 b");
     expect(tradeLines[2]).toContain("p0 z0 a");
-    expect(tradeLines[3]).toContain("graveyard monster z0 b");
-    expect(tradeLines[4]).toContain("graveyard monster z0 a");
+    expect(tradeLines[3]).toContain("limbo monster z0 b");
+    expect(tradeLines[4]).toContain("limbo monster z0 a");
 
     const crash = board({
       phase: "battle",

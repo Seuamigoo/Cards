@@ -203,8 +203,8 @@ function parsePlayer(value: unknown, config: BoardState["config"]): PlayerState 
     spellTrapZone,
     towerZone,
     biomeZone,
-    graveyard,
-    limbo,
+    graveyard: [],
+    limbo: [...limbo, ...graveyard],
     towerSummonedThisTurn: value.towerSummonedThisTurn,
     normalSummonedThisTurn: value.normalSummonedThisTurn,
     lineageDeck,
@@ -286,6 +286,7 @@ function parseMonsterZone(value: unknown, slots: number): readonly (MonsterInsta
       ...(materials.cards !== undefined ? { materials: materials.cards } : {}),
       ...(typeof entry.tempAtk === "number" ? { tempAtk: entry.tempAtk } : {}),
       ...(entry.activatedThisTurn === true ? { activatedThisTurn: true } : {}),
+      ...(entry.faceDown === true ? { faceDown: true } : {}),
     });
   }
   return zone;

@@ -32,7 +32,9 @@ export { effectiveAttack, effectiveTowerDefense } from "./effects";
 export { getLegalTargets } from "./combatRules";
 export type { AttackTarget } from "./combatRules";
 export { applyAction, destroyTower, getLegalActions } from "./actions";
-export type { Action, ActionResult } from "./actions";
+export type { Action, ActionResult, SpellTrapTarget } from "./actions";
+export { getPlayerView, redactEventFor } from "./playerView";
+export type { GameEvent, HiddenMonster, HiddenSlot, PlayerView, RedactedGameEvent, VisiblePlayer } from "./playerView";
 
 export { EventBus } from "./eventBus";
 export type {
@@ -57,6 +59,7 @@ export type {
   MonsterSummonedEvent,
   PhaseChangedEvent,
   SpellTrapActivatedEvent,
+  SpellTrapActivatedTarget,
   SpellTrapSetEvent,
   TowerDestroyedEvent,
   TowerSummonedEvent,

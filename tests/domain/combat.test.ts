@@ -98,6 +98,24 @@ describe("combate", () => {
     expect(getLegalActions(firstTurn, 0).some((action) => action.type === "attack")).toBe(false);
   });
 
+  it("no turno 1 quem começa não compra e não ataca", () => {
+    const cards = [monster("m1", 1000), monster("m2", 1000), monster("m3", 1000), monster("m4", 1000), monster("m5", 1000), monster("m6", 1000)];
+    const match = new GameMatch("classic", ["lina", "kael"], { openingHandSize: 5 }, {
+      decks: [cards, cards],
+      rng: { next: () => 0.999 },
+    });
+    const hand = match.getState().players[0].hand.length;
+    const deck = match.getState().players[0].deck.length;
+    match.advancePhase();
+    expect(match.getState().phase).toBe("main1");
+    expect(match.getState().turn).toBe(1);
+    expect(match.getState().players[0].hand).toHaveLength(hand);
+    expect(match.getState().players[0].deck).toHaveLength(deck);
+    match.advancePhase();
+    expect(match.getState().phase).toBe("main2");
+    expect(getLegalActions(match.getState(), 0).some((action) => action.type === "attack")).toBe(false);
+  });
+
   it("só aponta monstros quando o oponente controla algum", () => {
     const state = battleState({
       attacker: monster("a", 1800),
@@ -129,7 +147,8 @@ describe("combate", () => {
       return;
     }
     expect(result.state.players[1].monsterZone[0]).toBeNull();
-    expect(result.state.players[1].graveyard.map((card) => card.id)).toEqual(["d"]);
+    expect(result.state.players[1].limbo.map((card) => card.id)).toEqual(["d"]);
+    expect(result.state.players[1].graveyard).toEqual([]);
     expect(result.state.players[1].hp).toBe(4200);
     expect(result.state.players[0].hp).toBe(5000);
     expect(result.state.players[0].monsterZone[0]?.card.id).toBe("a");
@@ -149,8 +168,10 @@ describe("combate", () => {
     }
     expect(result.state.players[0].monsterZone[0]).toBeNull();
     expect(result.state.players[1].monsterZone[0]).toBeNull();
-    expect(result.state.players[0].graveyard.map((card) => card.id)).toEqual(["a"]);
-    expect(result.state.players[1].graveyard.map((card) => card.id)).toEqual(["d"]);
+    expect(result.state.players[0].limbo.map((card) => card.id)).toEqual(["a"]);
+    expect(result.state.players[1].limbo.map((card) => card.id)).toEqual(["d"]);
+    expect(result.state.players[0].graveyard).toEqual([]);
+    expect(result.state.players[1].graveyard).toEqual([]);
     expect(result.state.players[0].hp).toBe(8000);
     expect(result.state.players[1].hp).toBe(8000);
   });
