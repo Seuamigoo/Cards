@@ -15,6 +15,7 @@ import type { ServerEnv } from "./env";
 import { imageExtension } from "./imageStorage";
 import type { ImageStorage } from "./imageStorage";
 import { LocalImageStorage } from "./imageStorage";
+import { registerCollection } from "./collectionRoutes";
 import { registerOnline } from "./online";
 import { hashPassword, verifyPassword } from "./passwords";
 import { hashToken, newRefreshToken, readAccess, signAccess } from "./tokens";
@@ -96,6 +97,7 @@ export async function buildApp(options: BuildOptions = {}) {
   await app.register(rateLimit, { global: false });
   await app.register(fastifyStatic, { root: uploadsDir, prefix: "/uploads/" });
   await registerOnline(app, prisma, env);
+  await registerCollection(app, prisma, env);
 
   app.get("/health", async () => ({ ok: true }));
 

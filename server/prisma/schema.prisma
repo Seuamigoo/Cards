@@ -13,9 +13,35 @@ model User {
   username      String         @unique
   passwordHash  String
   role          String         @default("USER")
-  createdAt     DateTime       @default(now())
+  createdAt     DateTime         @default(now())
+  starterId     String?
   profile       PlayerProfile?
   refreshTokens RefreshToken[]
+  collection    CollectionItem[]
+  decks         Deck[]
+}
+
+model CollectionItem {
+  id       String @id @default(cuid())
+  userId   String
+  user     User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  cardId   String
+  quantity Int
+
+  @@unique([userId, cardId])
+}
+
+model Deck {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name      String
+  mode      String
+  cards     String
+  isActive  Boolean  @default(false)
+  lineage   String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model RefreshToken {
