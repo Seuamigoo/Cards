@@ -19,9 +19,10 @@ import { watchDuel } from "./board/fx";
 import type { BoardFx } from "./board/fx";
 import { brasaShowcase } from "./board/showcase";
 import { renderDuel } from "./board/view";
+import { INITIAL_SCREEN, aiDuelRequest, homeEntries, pvpHint, showDragonTable } from "./home";
 import "./style.css";
 
-type Screen = "menu" | "collection" | "login" | "register" | "admin" | "online" | "bot";
+type Screen = "gate" | "menu" | "battle" | "collection" | "login" | "register" | "admin" | "online" | "bot";
 
 let loaded: CardRegistryResult = CardRegistry.fromJSON(JSON.stringify(catalogFile));
 let session: Session | null = null;
@@ -32,14 +33,24 @@ if (root === null) {
 }
 const app = root;
 
-let screen: Screen = "menu";
+let screen: Screen = INITIAL_SCREEN;
+let guest = false;
+let battleMode: GameMode = "classic";
+let battleLevel: BotLevel = "easy";
+let battleNote: string | null = null;
 void refreshCatalog().catch(() => undefined).finally(draw);
 
 function draw(): void {
   app.replaceChildren();
   switch (screen) {
+    case "gate":
+      app.append(renderGate());
+      return;
     case "menu":
       app.append(renderMenu());
+      return;
+    case "battle":
+      app.append(renderBattle());
       return;
     case "collection":
       app.append(renderCollection(loaded));
@@ -71,32 +82,17 @@ function draw(): void {
   }
 }
 
-function renderMenu(): HTMLElement {
+function renderGate(): HTMLElement {
   const main = document.createElement("main");
+  main.className = "gate";
   const title = document.createElement("h1");
   title.textContent = "Convergência";
   const intro = document.createElement("p");
-  intro.textContent = "Escolha um modo.";
-  const nav = document.createElement("nav");
+  intro.textContent = "Escolha como entrar.";
+  const nav = document.createElement("div");
+  nav.className = "gate-nav";
+  nav.setAttribute("aria-label", "Entrada");
   nav.append(
-    actionButton("Jogar contra bot", () => {
-      screen = "bot";
-      if (botMatch === null) {
-        startBot("classic", "easy");
-        return;
-      }
-      draw();
-    }),
-    session === null
-      ? disabledButton("Online")
-      : actionButton("Online", () => {
-          screen = "online";
-          draw();
-        }),
-    actionButton("Coleção", () => {
-      screen = "collection";
-      draw();
-    }),
     actionButton("Entrar", () => {
       screen = "login";
       draw();
@@ -105,17 +101,188 @@ function renderMenu(): HTMLElement {
       screen = "register";
       draw();
     }),
+    actionButton("Entrar como convidado", () => {
+      guest = true;
+      session = null;
+      screen = "menu";
+      draw();
+    }),
+    renderServerSettings(),
   );
+  main.append(title, intro, nav);
+  return main;
+}
+
+function renderServerSettings(): HTMLElement {
+  const details = document.createElement("details");
+  details.className = "server-settings";
+  const summary = document.createElement("summary");
+  summary.textContent = "Configurações de servidor";
+  const label = document.createElement("label");
+  label.textContent = "Servidor";
+  const input = document.createElement("input");
+  input.type = "text";
+  input.placeholder = "192.168.0.10:3001";
+  input.spellcheck = false;
+  input.autocomplete = "off";
+  input.setAttribute("aria-label", "Servidor");
+  input.value = serverFieldValue(import.meta.env.VITE_API_URL ?? "", readStoredServer(localStorage));
+  input.addEventListener("change", () => {
+    rememberServer(localStorage, input.value);
+  });
+  label.append(input);
+  const hint = document.createElement("p");
+  hint.className = "soon";
+  hint.textContent = "IP da rede local. Vazio usa o endereço do aplicativo.";
+  details.append(summary, label, hint);
+  return details;
+}
+
+function renderMenu(): HTMLElement {
+  const main = document.createElement("main");
+  const title = document.createElement("h1");
+  title.textContent = "Convergência";
+  const intro = document.createElement("p");
+  intro.textContent = guest ? "Convidado. Seus dados não são salvos." : "Escolha uma entrada.";
+  const nav = document.createElement("nav");
+  nav.className = "menu-nav";
+  nav.setAttribute("aria-label", "Menu principal");
+  for (const entry of homeEntries()) {
+    if (entry.ready) {
+      nav.append(actionButton(entry.label, () => openHome(entry.id)));
+      continue;
+    }
+    const block = document.createElement("div");
+    const button = disabledButton(entry.label);
+    const hintId = `soon-${entry.id}`;
+    button.setAttribute("aria-describedby", hintId);
+    const hint = document.createElement("p");
+    hint.id = hintId;
+    hint.className = "soon";
+    hint.textContent = entry.hint ?? "em breve";
+    block.append(button, hint);
+    nav.append(block);
+  }
+  nav.append(actionButton("Sair", () => {
+    guest = false;
+    session = null;
+    botMatch = null;
+    screen = "gate";
+    draw();
+  }));
   if (session?.role === "ADMIN") {
-    nav.append(
-      actionButton("Admin", () => {
-        screen = "admin";
-        draw();
-      }),
-    );
+    nav.append(actionButton("Admin", () => {
+      screen = "admin";
+      draw();
+    }));
   }
   main.append(title, intro, nav);
   return main;
+}
+
+function openHome(id: "battle" | "deck" | "collection" | "shop" | "profile"): void {
+  switch (id) {
+    case "battle":
+      battleNote = null;
+      screen = "battle";
+      draw();
+      return;
+    case "deck":
+    case "collection":
+    case "shop":
+    case "profile":
+      return;
+    default: {
+      const unexpected: never = id;
+      throw new Error(`Entrada inválida: ${String(unexpected)}.`);
+    }
+  }
+}
+
+function renderBattle(): HTMLElement {
+  const main = document.createElement("main");
+  const title = document.createElement("h1");
+  title.textContent = "Batalhar";
+  const mode = document.createElement("fieldset");
+  mode.className = "choice-set";
+  const modeLegend = document.createElement("legend");
+  modeLegend.textContent = "Modo";
+  mode.append(
+    modeLegend,
+    choice("battle-mode", "classic", "Clássico", battleMode === "classic", () => {
+      battleMode = "classic";
+    }),
+    choice("battle-mode", "blitz", "Blitz (3 slots)", battleMode === "blitz", () => {
+      battleMode = "blitz";
+    }),
+  );
+  const level = document.createElement("fieldset");
+  level.className = "choice-set";
+  const levelLegend = document.createElement("legend");
+  levelLegend.textContent = "Dificuldade";
+  level.append(
+    levelLegend,
+    choice("battle-level", "easy", "Fácil", battleLevel === "easy", () => {
+      battleLevel = "easy";
+    }),
+    choice("battle-level", "normal", "Normal", battleLevel === "normal", () => {
+      battleLevel = "normal";
+    }),
+  );
+  const ai = document.createElement("section");
+  const aiTitle = document.createElement("h2");
+  aiTitle.textContent = "J x IA";
+  const start = actionButton("Batalhar contra a IA", () => {
+    startAiDuel(aiDuelRequest(battleMode, battleLevel));
+  });
+  ai.append(aiTitle, start);
+  if (showDragonTable(import.meta.env.DEV)) {
+    ai.append(actionButton("Mesa com Dragão Brasa", () => {
+      startBrasa();
+    }));
+  }
+  const pvp = document.createElement("section");
+  const pvpTitle = document.createElement("h2");
+  pvpTitle.textContent = "J x J";
+  const hint = document.createElement("p");
+  hint.className = "soon";
+  hint.id = "pvp-soon";
+  hint.textContent = pvpHint(guest || session === null);
+  const pvpButton = disabledButton("J x J");
+  pvpButton.setAttribute("aria-describedby", "pvp-soon");
+  pvp.append(pvpTitle, pvpButton, hint);
+  if (battleNote !== null) {
+    const note = document.createElement("p");
+    note.setAttribute("role", "alert");
+    note.textContent = battleNote;
+    main.append(title, mode, level, ai, pvp, note);
+  } else {
+    main.append(title, mode, level, ai, pvp);
+  }
+  main.append(actionButton("Voltar", () => {
+    screen = "menu";
+    draw();
+  }));
+  return main;
+}
+
+function choice(name: string, value: string, label: string, checked: boolean, onPick: () => void): HTMLLabelElement {
+  const wrapper = document.createElement("label");
+  wrapper.className = "choice";
+  const input = document.createElement("input");
+  input.type = "radio";
+  input.name = name;
+  input.value = value;
+  input.checked = checked;
+  input.addEventListener("change", () => {
+    if (input.checked) {
+      onPick();
+    }
+  });
+  const text = document.createElement("span");
+  text.textContent = label;
+  wrapper.append(input, text);
+  return wrapper;
 }
 
 function renderCollection(result: CardRegistryResult): HTMLElement {
@@ -187,7 +354,7 @@ function disabledButton(label: string): HTMLButtonElement {
   const button = document.createElement("button");
   button.type = "button";
   button.disabled = true;
-  button.textContent = `${label} (em breve)`;
+  button.textContent = label;
   return button;
 }
 
@@ -235,7 +402,7 @@ function renderAuth(mode: "login" | "register"): HTMLElement {
       void submitAuth(mode, server.input.value, email.input.value, password.input.value, username.input.value, message);
     }),
     actionButton("Voltar", () => {
-      screen = "menu";
+      screen = "gate";
       draw();
     }),
     message,
@@ -271,6 +438,7 @@ async function submitAuth(
     return;
   }
   session = result;
+  guest = false;
   screen = "menu";
   draw();
 }
@@ -447,7 +615,6 @@ let botMatch: GameMatch | null = null;
 let botLevel: BotLevel = "easy";
 let duelView: DuelViewState = initialDuelView();
 let duelError: string | null = null;
-let duelMode = "classic-easy";
 let boardFx: BoardFx[] = [];
 let stopWatch: (() => void) | null = null;
 const botRng = createSeededRng(9);
@@ -471,10 +638,9 @@ function renderBot(): HTMLElement {
     texts: effectText,
     error: duelError,
     fx: boardFx,
-    onMode: chooseMode,
-    modeId: duelMode,
     onBack: () => {
-      screen = "menu";
+      botMatch = null;
+      screen = "battle";
       draw();
     },
     onInput: onDuelInput,
@@ -482,25 +648,11 @@ function renderBot(): HTMLElement {
   return main;
 }
 
-function chooseMode(mode: string): void {
-  switch (mode) {
-    case "classic-easy":
-      startBot("classic", "easy");
-      return;
-    case "classic-normal":
-      startBot("classic", "normal");
-      return;
-    case "blitz-easy":
-      startBot("blitz", "easy");
-      return;
-    case "blitz-normal":
-      startBot("blitz", "normal");
-      return;
-    case "brasa":
-      startBrasa();
-      return;
-    default:
-      return;
+function startAiDuel(request: { readonly mode: GameMode; readonly level: BotLevel }): void {
+  if (!startBot(request.mode, request.level)) {
+    battleNote = duelError ?? "O catálogo ainda não carregou.";
+    screen = "battle";
+    draw();
   }
 }
 
@@ -531,26 +683,30 @@ function attachWatch(match: GameMatch): void {
   });
 }
 
-function startBot(mode: GameMode, level: BotLevel): void {
+function startBot(mode: GameMode, level: BotLevel): boolean {
   if (!loaded.ok) {
-    return;
+    duelError = "O catálogo ainda não carregou.";
+    return false;
   }
   const human = buildDeck(loaded.registry, [...starterCardIds("vanguarda-do-reino", mode)]);
   const bot = buildDeck(loaded.registry, [...starterCardIds("marcha-da-necropole", mode)]);
   if (!human.ok || !bot.ok) {
-    return;
+    duelError = "Não foi possível montar os decks iniciais.";
+    return false;
   }
   botLevel = level;
-  duelMode = mode === "classic" ? (level === "easy" ? "classic-easy" : "classic-normal") : (level === "easy" ? "blitz-easy" : "blitz-normal");
   duelView = initialDuelView();
   duelError = null;
+  battleNote = null;
   botMatch = new GameMatch(mode, ["voce", "bot"], undefined, {
     decks: [human.cards, bot.cards],
     seed: 1,
   });
   attachWatch(botMatch);
+  screen = "bot";
   runBot();
   draw();
+  return true;
 }
 
 function startBrasa(): void {
@@ -559,17 +715,18 @@ function startBrasa(): void {
   }
   const showcase = brasaShowcase(loaded.registry);
   if (!showcase.ok) {
-    duelError = showcase.error;
+    battleNote = showcase.error;
     botMatch = null;
+    screen = "battle";
     draw();
     return;
   }
   botLevel = "easy";
-  duelMode = "brasa";
   duelView = initialDuelView();
   duelError = null;
   botMatch = showcase.match;
   attachWatch(botMatch);
+  screen = "bot";
   draw();
 }
 
