@@ -5,6 +5,7 @@ import { buildDeck, starterCardIds } from "../../src/catalog/index";
 import { GameMatch, createSeededRng } from "../../src/domain/index";
 import type { GameMode } from "../../src/domain/index";
 import { adminCards, apiUrl, loginAccount, publishCatalog, registerAccount, saveCard, uploadCardImage } from "./api";
+import { probeServer, rememberServer, serverFieldValue, readStoredServer } from "./serverUrl";
 import type { AdminCard, Session } from "./api";
 import { CardRegistry, CatalogCache } from "../../src/catalog/index";
 import type { CardRegistryResult } from "../../src/catalog/index";
@@ -211,17 +212,21 @@ function renderAuth(mode: "login" | "register"): HTMLElement {
   title.textContent = mode === "login" ? "Entrar" : "Cadastrar";
   const form = document.createElement("form");
   form.className = "toolbar";
+  const server = field("text", "Servidor");
+  server.input.placeholder = "192.168.0.10:3001";
+  server.input.spellcheck = false;
+  server.input.value = serverFieldValue(import.meta.env.VITE_API_URL ?? "", readStoredServer(localStorage));
   const email = field("email", "Email");
   const password = field("password", "Senha");
   const username = field("text", "Usuário");
   const message = document.createElement("p");
-  form.append(email.label, password.label);
+  form.append(server.label, email.label, password.label);
   if (mode === "register") {
     form.insertBefore(username.label, email.label);
   }
   form.append(
     actionButton(mode === "login" ? "Entrar" : "Criar conta", () => {
-      void submitAuth(mode, email.input.value, password.input.value, username.input.value, message);
+      void submitAuth(mode, server.input.value, email.input.value, password.input.value, username.input.value, message);
     }),
     actionButton("Voltar", () => {
       screen = "menu";
@@ -238,11 +243,18 @@ function renderAuth(mode: "login" | "register"): HTMLElement {
 
 async function submitAuth(
   mode: "login" | "register",
+  serverInput: string,
   email: string,
   password: string,
   username: string,
   message: HTMLElement,
 ): Promise<void> {
+  rememberServer(localStorage, serverInput);
+  const health = await probeServer(apiUrl(""), fetch);
+  if (health !== null) {
+    message.textContent = health;
+    return;
+  }
   if (mode === "register") {
     message.textContent = (await registerAccount(email, username, password)) ?? "Conta criada. Entre para continuar.";
     return;

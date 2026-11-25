@@ -1,7 +1,10 @@
-const configured = import.meta.env.VITE_API_URL ?? "";
+import { readStoredServer, serverBase } from "./serverUrl";
+
+const buildUrl = import.meta.env.VITE_API_URL ?? "";
 
 export function apiUrl(path: string): string {
-  const base = configured.replace(/\/$/, "");
+  const stored = typeof localStorage === "undefined" ? null : readStoredServer(localStorage);
+  const base = serverBase(buildUrl, stored);
   return `${base}${path}`;
 }
 

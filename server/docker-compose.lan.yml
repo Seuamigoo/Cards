@@ -1,0 +1,22 @@
+name: convergencia-lan
+
+services:
+  server:
+    build:
+      context: ..
+      dockerfile: server/Dockerfile
+    env_file:
+      - .env
+    environment:
+      HOST: 0.0.0.0
+      PORT: "3001"
+      DATABASE_URL: file:/data/convergencia.db
+      UPLOADS_DIR: /data/uploads
+    ports:
+      - "3001:3001"
+    volumes:
+      - convergencia-data:/data
+    restart: unless-stopped
+
+volumes:
+  convergencia-data:
